@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financial Dashboard v6.3</title>
+    <title>Financial Dashboard v6.4</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -37,7 +37,6 @@
         .tab-btn.active { background: #333; color: white; border-color: #333; }
 
         .main-container { position: relative; height: 60vh; min-height: 400px; display: flex; flex-direction: column; }
-        
         .chart-layout-row { display: flex; align-items: stretch; gap: 5px; flex: 1; min-height: 0; }
         .chart-scroll-box { flex: 1; border: 1px solid var(--border); border-radius: 8px; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; }
         .chart-scroll-box.no-scroll { overflow-x: hidden; }
@@ -69,7 +68,7 @@
 <body>
     <div class="card">
         <div id="loadingOverlay">데이터 불러오는 중...</div>
-        <div class="maker-sign">Made by KMW | v6.3 Final (Unit Fix)</div>
+        <div class="maker-sign">Made by KMW | v6.4 Fixes</div>
         <div class="header">
             <div><h2>📈 기업 분석 <span id="industryBadge" class="badge gen">일반</span></h2></div>
             <div class="view-switch">
@@ -231,6 +230,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
             const conf = getCurrConfig();
             const isStock = conf.type === 'stock';
+            
             document.getElementById('consolControl').style.display = isStock ? 'none' : 'flex';
             document.getElementById('periodSelect').style.visibility = isStock ? 'hidden' : 'visible';
             document.getElementById('stockOptions').style.display = isStock ? 'flex' : 'none';
@@ -238,10 +238,18 @@
             document.getElementById('simpleZoomContainer').style.display = isStock ? 'none' : 'flex';
             document.getElementById('rangeSliderContainer').style.display = isStock ? 'block' : 'none';
             
+            // [수정] 주가 탭에서 테이블 버튼 숨기기
+            const btnTable = document.getElementById('btnTable');
+            if(isStock) {
+                btnTable.style.display = 'none';
+                if(currentViewMode==='table') setViewMode('graph'); 
+            } else {
+                btnTable.style.display = 'inline-block';
+            }
+
             const box = document.getElementById('chartScrollBox');
             if(isStock) box.classList.add('no-scroll'); else box.classList.remove('no-scroll');
 
-            if(isStock && currentViewMode==='table') setViewMode('graph'); 
             updateChart();
         }
 
@@ -394,8 +402,13 @@
                     const name = isB ? compBName : currentCompName;
                     const label = hasComp ? `${name}-${item.label||item.key}` : (item.label||item.key);
                     let color = item.color, dash = item.borderDash||[], pStyle = item.type==='bar'?'rect':'circle';
+                    
                     if(item.key==='marcap' && !isB) { color='transparent'; pStyle='circle'; }
                     else if(isB) { color='#95a5a6'; if(item.type==='line') dash=[5,5]; pStyle='triangle'; }
+                    
+                    // [수정] 꺾은선 그래프(이익률 등)의 범례를 '선(line)' 모양으로 변경
+                    if (item.type === 'line') pStyle = 'line'; 
+
                     let yID = (isLine && !customData && item.key!=='marcap') ? 'y1' : 'y';
                     if(item.key==='marcap') yID='y_marcap';
 
@@ -449,7 +462,7 @@
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { position: 'top', labels:{ boxWidth:12, font:{size:fs+1}, sort: (a,b) => { const gk=(s)=>s.includes(' - ')?s.split(' - ')[1]:s; const ai=ORDER_PRIORITY.indexOf(gk(a.text)), bi=ORDER_PRIORITY.indexOf(gk(b.text)); if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi; } } } },
+                        plugins: { legend: { position: 'top', labels:{ boxWidth:12, font:{size:fs+1}, usePointStyle: true, sort: (a,b) => { const gk=(s)=>s.includes(' - ')?s.split(' - ')[1]:s; const ai=ORDER_PRIORITY.indexOf(gk(a.text)), bi=ORDER_PRIORITY.indexOf(gk(b.text)); if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi; } } } },
                         scales: {
                             x: { type: isStock?'time':'category', time:{unit:'month', displayFormats:{month:'yy.MM'}}, offset:!isStock, min: (keepZoom&&isStock)?finalLabels[savedStartIdx]:undefined, max: (keepZoom&&isStock)?finalLabels[savedEndIdx]:undefined },
                             y: { display: !isStock||showOverlay, position:'left', suggestedMax: originalMaxY, suggestedMin: originalMinY },
