@@ -390,12 +390,69 @@
                     finalLabels = Array.from(allD).sort();
                     const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
                     finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
-                } else {
+                // [수정된 proc 함수] 이익률 재계산 로직 적용
                     const proc = (dObj) => {
-                        let m={}; if(!dObj||!dObj.data[consolType])return[];
-                        tabCfg.sources.forEach(s=>{if(dObj.data[consolType][s])dObj.data[consolType][s].forEach(r=>m[r.label]={...(m[r.label]||{}),...r});});
-                        let f=Object.values(m).sort((a,b)=>(a.year-b.year)||(a.quarter-b.quarter));
-                        if(period==='ALL_Y'||period.startsWith('CUM_')) { const ys=[...new Set(f.map(d=>d.year))], tQ=period.startsWith('CUM_')?parseInt(period.split('_')[1].replace('Q','')):4; return ys.map(y=>{ const its=f.filter(d=>d.year===y&&d.quarter<=tQ); if(!its.length)return null; let r={label:y+'년'+(period.startsWith('CUM_')?` ${typeLabel(tQ)}`:'')}; [...tabCfg.left_items,...tabCfg.right_items].forEach(i=>{ const k=i.key, isR=tabCfg.right_items.includes(i); if(isR||['자산총계','부채총계','자본총계'].includes(k)) r[k]=its[its.length-1][k]; else r[k]=its.reduce((a,c)=>a+(c[k]||0),0); }); return r; }).filter(d=>d!==null); } else if(period.startsWith('COMP_')) return f.filter(d=>d.quarter===parseInt(period.split('_')[1].replace('Q',''))); else if(period!=='ALL_Q') return f.filter(d=>d.year==period); return f;
+                        let m = {}; 
+                        if (!dObj || !dObj.data[consolType]) return [];
+
+                        // 1. 데이터 병합
+                        tabCfg.sources.forEach(s => {
+                            if (dObj.data[consolType][s]) {
+                                dObj.data[consolType][s].forEach(r => {
+                                    m[r.label] = { ...(m[r.label] || {}), ...r };
+                                });
+                            }
+                        });
+
+                        let f = Object.values(m).sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
+
+                        // 2. 기간별 집계 로직
+                        if (period === 'ALL_Y' || period.startsWith('CUM_')) {
+                            const ys = [...new Set(f.map(d => d.year))];
+                            const tQ = period.startsWith('CUM_') ? parseInt(period.split('_')[1].replace('Q', '')) : 4;
+
+                            return ys.map(y => {
+                                const its = f.filter(d => d.year === y && d.quarter <= tQ);
+                                if (!its.length) return null;
+
+                                let r = { label: y + '년' + (period.startsWith('CUM_') ? ` ${typeLabel(tQ)}` : '') };
+
+                                // 합계 계산 헬퍼 함수
+                                const sumVal = (key) => its.reduce((acc, curr) => acc + (curr[key] || 0), 0);
+
+                                // 분모/분자 데이터 확보
+                                const sales = sumVal('매출액') || sumVal('영업수익');
+                                const profitOp = sumVal('영업이익');
+                                const profitGross = sumVal('매출총이익');
+                                const profitNet = sumVal('당기순이익') || sumVal('순이익');
+
+                                // 각 항목별 값 채우기
+                                [...tabCfg.left_items, ...tabCfg.right_items].forEach(i => {
+                                    const k = i.key;
+
+                                    // (A) 이익률 재계산
+                                    if (k === '영업이익률' && sales !== 0) r[k] = (profitOp / sales) * 100;
+                                    else if (k === '매출총이익률' && sales !== 0) r[k] = (profitGross / sales) * 100;
+                                    else if (k === '순이익률' && sales !== 0) r[k] = (profitNet / sales) * 100;
+                                    
+                                    // (B) 재무상태표(BS) -> 기말 잔액 사용
+                                    else if (['자산총계', '부채총계', '자본총계', '부채비율'].includes(k)) {
+                                        r[k] = its[its.length - 1][k];
+                                    }
+                                    
+                                    // (C) 나머지 -> 단순 합산
+                                    else r[k] = sumVal(k);
+                                });
+                                return r;
+                            }).filter(d => d !== null);
+
+                        } else if (period.startsWith('COMP_')) {
+                            return f.filter(d => d.quarter === parseInt(period.split('_')[1].replace('Q', '')));
+                        } else if (period !== 'ALL_Q') {
+                            return f.filter(d => d.year == period);
+                        }
+                        
+                        return f;
                     };
                     let dA = proc(currentCompData), dB = hasComp ? proc(compBData) : [];
                     let allL = new Set(dA.map(d=>d.label)); if(hasComp) dB.forEach(d=>allL.add(d.label));
