@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financial Dashboard (Final)</title>
+    <title>Financial Dashboard v6.1</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -15,150 +15,153 @@
     <script src="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js"></script>
     
     <style>
-        :root { --primary: #333; --bg: #f0f2f5; --white: #ffffff; --point: #007bff; }
+        :root { --primary: #333; --bg: #f0f2f5; --white: #ffffff; --point: #007bff; --border: #e0e0e0; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; font-size: 14px; }
-        .card { background: var(--white); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 1200px; margin: 0 auto; position: relative; }
-        .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; }
-        .header h2 { margin: 0; font-size: 20px; font-weight: 700; color: #2c3e50; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; color: white; vertical-align: middle; margin-left: 5px; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; font-size: 14px; }
+        .card { background: var(--white); border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 1200px; margin: 0 auto; position: relative; }
+        
+        .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #2c3e50; }
+        .badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 800; color: white; vertical-align: middle; margin-left: 5px; }
         .badge.gen { background-color: #2ecc71; } .badge.fin { background: #f39c12; }
-        .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 10px; flex: 1; }
-        .compare-box { display: flex; align-items: center; gap: 5px; background: #eef2f5; padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd; }
-        .compare-input { width: 120px; padding: 8px; font-size: 13px; display: none; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
-        .compare-input.active { display: block; animation: fadeIn 0.3s; }
-        .option-group { display: none; gap: 10px; flex-wrap: wrap; }
-        .overlay-box, .ma-box { display: flex; align-items: center; gap: 5px; background: #fff4e6; padding: 5px 10px; border-radius: 6px; border: 1px solid #ffe8cc; }
-        .ma-box { background: #e8f6f3; border-color: #d1f2eb; }
-        .ma-checks { display: flex; gap: 8px; margin-left: 5px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-        input, select, button { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; background: white; }
-        .toggle-group { display: flex; background: #e0e4e8; border-radius: 6px; padding: 3px; }
-        .toggle-label { padding: 8px 12px; cursor: pointer; font-size: 13px; font-weight: bold; color: #666; border-radius: 4px; transition: 0.2s; white-space: nowrap; }
-        .toggle-input { display: none; }
-        .toggle-input:checked + .toggle-label { background: white; color: var(--point); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .toggle-input:disabled + .toggle-label { color: #ccc; cursor: not-allowed; }
-        .excel-btn { background-color: #217346; color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .tab-btn { padding: 8px 16px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-weight: 600; color: #555; border-radius: 20px; white-space: nowrap; transition: 0.2s; flex-shrink: 0; font-size: 13px; }
+        
+        .controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: #f8f9fa; padding: 8px; border-radius: 8px; flex: 1; }
+        input, select, button { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; }
+        
+        /* 뷰 전환 스위치 */
+        .view-switch { display: flex; background: #e9ecef; border-radius: 6px; padding: 2px; margin-left: auto; }
+        .view-btn { padding: 6px 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: #666; border-radius: 4px; transition: 0.2s; }
+        .view-btn.active { background: white; color: var(--point); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { padding: 8px 14px; border: 1px solid var(--border); background: white; cursor: pointer; font-weight: 600; color: #555; border-radius: 20px; white-space: nowrap; font-size: 13px; }
         .tab-btn.active { background: #333; color: white; border-color: #333; }
-        .chart-layout-row { display: flex; align-items: stretch; gap: 10px; height: 60vh; min-height: 400px; }
-        .y-slider-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 35px; background: #fff9e6; border-radius: 8px; padding: 5px 0; border: 1px solid #ffeeba; }
-        .y-slider-container.right-side { background: #f3f0ff; border-color: #e5dbff; }
-        .zoom-label { font-size: 10px; font-weight: bold; color: #856404; white-space: nowrap; transform: rotate(-90deg); margin: 10px 0; }
-        .right-side .zoom-label { color: #5f3dc4; }
-        .slider-divider { width: 80%; height: 1px; background: #ddd; margin: 5px 0; }
-        .zoom-slider-vertical { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 8px; flex: 1; outline: none; margin: 5px 0; }
-        .right-slider-min-box { display: flex; flex-direction: column; align-items: center; flex: 1; width: 100%; }
-        .chart-scroll-box { flex: 1; border: 1px solid #f0f0f0; border-radius: 8px; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; }
+
+        /* 메인 컨테이너 */
+        .main-container { position: relative; height: 60vh; min-height: 400px; display: flex; flex-direction: column; }
+        
+        /* 그래프 뷰 */
+        .chart-layout-row { display: flex; align-items: stretch; gap: 5px; flex: 1; min-height: 0; }
+        .chart-scroll-box { flex: 1; border: 1px solid var(--border); border-radius: 8px; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; }
         .chart-scroll-box.no-scroll { overflow-x: hidden; }
         .chart-wrapper { height: 100%; min-width: 100%; position: relative; }
-        .bottom-controls { margin-top: 15px; padding: 0 15px; }
-        .x-zoom-container { display: flex; align-items: center; gap: 10px; background: #e7f5ff; padding: 8px 15px; border-radius: 8px; border: 1px solid #d0ebff; }
-        .x-slider-label { font-size: 12px; font-weight: bold; color: #004085; white-space: nowrap; }
-        .zoom-slider-horizontal { flex: 1; cursor: pointer; }
-        .range-slider-container { display: none; margin-top: 10px; }
-        .noUi-connect { background: #3498db; }
-        .noUi-handle { border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: grab; }
-        .range-info { text-align: center; margin-top: 5px; font-size: 12px; font-weight: bold; color: #666; }
         
-        #loadingOverlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 100; text-align: center; padding-top: 200px; font-weight: bold; font-size: 1.2em; color: #007bff; border-radius: 12px; backdrop-filter: blur(2px); }
+        /* 테이블 뷰 */
+        .table-container { display: none; flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: white; }
+        .table-container.active { display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: right; }
+        th { background: #f1f3f5; position: sticky; top: 0; z-index: 1; font-weight: 600; color: #444; text-align: center; border-bottom: 2px solid #ddd; }
+        th:first-child, td:first-child { position: sticky; left: 0; background: inherit; z-index: 2; text-align: left; border-right: 2px solid #eee; font-weight: bold; min-width: 120px; }
+        th:first-child { z-index: 3; }
+        tr:hover { background-color: #f8f9fa; }
+        .row-pct { color: #666; font-size: 12px; font-style: italic; background-color: #fafafa; }
+
+        /* 슬라이더 및 기타 */
+        .y-slider-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 30px; background: #fff9e6; border-radius: 8px; border: 1px solid #ffeeba; }
+        .zoom-slider-vertical { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 6px; flex: 1; margin: 5px 0; }
+        .bottom-controls { margin-top: 10px; padding: 0 5px; }
+        
+        /* v5.2의 옵션들 복원 */
+        .option-group { display: none; gap: 5px; }
+        .overlay-box, .ma-box { display: flex; align-items: center; gap: 5px; background: #fff4e6; padding: 4px 8px; border-radius: 6px; border: 1px solid #ffe8cc; font-size: 12px; }
+        .ma-box { background: #e8f6f3; border-color: #d1f2eb; }
+        .ma-checks { display: flex; gap: 5px; margin-left: 5px; }
+        .compare-input { width: 100px; display: none; } .compare-input.active { display: inline-block; }
+        
+        #loadingOverlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 100; text-align: center; padding-top: 200px; font-weight: bold; color: var(--point); backdrop-filter: blur(2px); border-radius: 12px; }
     </style>
 </head>
 <body>
     <div class="card">
         <div id="loadingOverlay">데이터 불러오는 중...</div>
-        <div class="maker-sign">Made by KMW | v5.2 Final (BugFix)</div>
         <div class="header">
-            <div><h2>📈 기업 재무 분석 <span id="industryBadge" class="badge gen" style="display:none">일반</span></h2></div>
-            <div class="controls">
-                <input type="text" id="companyInput" list="compList" placeholder="기업명 검색..." style="flex:1; min-width:120px;">
-                <datalist id="compList"></datalist>
-                <div class="compare-box">
-                    <input type="checkbox" id="compareToggle" onchange="toggleCompareMode()">
-                    <label for="compareToggle" class="compare-label">🆚 비교하기</label>
-                    <input type="text" id="compareInput" list="compList" class="compare-input" placeholder="비교 기업..." onchange="updateChart()">
-                </div>
-                <div id="stockOptions" class="option-group">
-                    <div class="overlay-box"><input type="checkbox" id="resultOverlay" onchange="updateChart(true)"><label for="resultOverlay" class="overlay-label">📊 실적 오버레이</label></div>
-                    <div class="ma-box"><span class="ma-label">📈 MA:</span><div class="ma-checks">
-                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="5" checked onchange="updateChart(true)">5</label>
-                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="10" onchange="updateChart(true)">10</label>
-                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="20" checked onchange="updateChart(true)">20</label>
-                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="60" checked onchange="updateChart(true)">60</label>
-                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="120" onchange="updateChart(true)">120</label>
-                    </div></div>
-                </div>
-                <div class="toggle-group" id="consolControl">
-                    <input type="radio" id="sep" name="consol" value="별도" class="toggle-input" checked onchange="updateChart()"><label for="sep" class="toggle-label" id="sepLabel">별도</label>
-                    <input type="radio" id="con" name="consol" value="연결" class="toggle-input" onchange="updateChart()"><label for="con" class="toggle-label" id="conLabel">연결</label>
-                </div>
-                <div style="display:flex; gap:5px;" id="periodControl">
-                    <select id="periodSelect" onchange="updateChart()" style="flex:1"></select>
-                    <select id="unitSelect" onchange="updateChart()" style="flex:1">
-                        <option value="1000000">단위: 백만원</option>
-                        <option value="100000000" selected>단위: 억원</option>
-                        <option value="1000000000000">단위: 조원</option>
-                    </select>
-                </div>
-                <button class="excel-btn" onclick="downloadExcel()">💾 Excel</button>
+            <div><h2>📈 기업 분석 <span id="industryBadge" class="badge gen">일반</span></h2></div>
+            <div class="view-switch">
+                <button class="view-btn active" onclick="setViewMode('graph')" id="btnGraph">📊 그래프</button>
+                <button class="view-btn" onclick="setViewMode('table')" id="btnTable">▦ 테이블</button>
             </div>
         </div>
+
+        <div class="controls">
+            <input type="text" id="companyInput" list="compList" placeholder="기업명 검색..." style="flex:1; min-width:120px;">
+            <datalist id="compList"></datalist>
+            
+            <div class="compare-box" style="display:flex; align-items:center; gap:5px; background:#eef2f5; padding:5px 10px; border-radius:6px; border:1px solid #ddd;">
+                <input type="checkbox" id="compareToggle" onchange="toggleCompareMode()"> <label for="compareToggle" style="font-size:13px;">비교</label>
+                <input type="text" id="compareInput" list="compList" class="compare-input" placeholder="비교 기업" onchange="updateChart()">
+            </div>
+
+            <div id="stockOptions" class="option-group">
+                <div class="overlay-box"><input type="checkbox" id="resultOverlay" onchange="updateChart(true)"><label for="resultOverlay">실적 오버레이</label></div>
+                <div class="ma-box"><span>MA:</span><div class="ma-checks">
+                    <label><input type="checkbox" class="ma-chk" value="5" checked onchange="updateChart(true)">5</label>
+                    <label><input type="checkbox" class="ma-chk" value="20" checked onchange="updateChart(true)">20</label>
+                    <label><input type="checkbox" class="ma-chk" value="60" checked onchange="updateChart(true)">60</label>
+                </div></div>
+            </div>
+
+            <div style="display:flex; gap:5px; flex:1;">
+                <select id="periodSelect" onchange="updateChart()" style="flex:1"></select>
+                <select id="unitSelect" onchange="updateChart()" style="width:80px;">
+                    <option value="100000000" selected>억원</option>
+                    <option value="1000000">백만</option>
+                </select>
+            </div>
+            <div id="consolControl" style="display:flex; background:#eee; border-radius:4px; padding:2px;">
+                <input type="radio" name="consol" value="별도" id="sep" checked onchange="updateChart()"><label for="sep" style="font-size:11px; padding:4px 8px; cursor:pointer;">별도</label>
+                <input type="radio" name="consol" value="연결" id="con" onchange="updateChart()"><label for="con" style="font-size:11px; padding:4px 8px; cursor:pointer;">연결</label>
+            </div>
+        </div>
+
         <div class="tabs">
             <button class="tab-btn active" onclick="setTab('PL_MIX', this)">손익계산서</button>
             <button class="tab-btn" onclick="setTab('BS_MIX', this)">재무상태표</button>
             <button class="tab-btn" onclick="setTab('CF', this)">현금흐름표</button>
-            <button class="tab-btn" onclick="setTab('STOCK', this)">📊 주가/시총</button>
+            <button class="tab-btn" onclick="setTab('STOCK', this)">주가/시총</button>
         </div>
-        <div class="chart-layout-row">
-            <div class="y-slider-container" id="leftSliderBox">
-                <span class="zoom-label" style="color:red">▲상한</span>
-                <input type="range" id="leftMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateLeftMax(this.value)">
-                <div class="slider-divider"></div>
-                <input type="range" id="leftMinSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateLeftMin(this.value)">
-                <span class="zoom-label" style="color:blue">▼하한</span>
-            </div>
-            <div class="chart-scroll-box" id="chartScrollBox">
-                <div class="chart-wrapper"><canvas id="mainChart"></canvas></div>
-            </div>
-            <div class="y-slider-container right-side" id="rightSliderBox" style="display:none;">
-                <span class="zoom-label" style="color:red">▲상한</span>
-                <input type="range" id="rightMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateRightMax(this.value)">
-                <div class="slider-divider" id="rightSliderDivider"></div>
-                <div class="right-slider-min-box" id="rightMinSliderContainer">
-                    <input type="range" id="rightMinSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateRightMin(this.value)">
-                    <span class="zoom-label" style="color:blue">▼하한</span>
+
+        <div class="main-container">
+            <div class="chart-layout-row" id="graphView">
+                <div class="y-slider-container" id="leftSliderBox">
+                    <input type="range" id="leftMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" oninput="updateLeftMax(this.value)">
+                    <div style="width:100%; height:1px; background:#ccc;"></div>
+                    <input type="range" id="leftMinSlider" class="zoom-slider-vertical" min="50" max="300" value="110" oninput="updateLeftMin(this.value)">
+                </div>
+                <div class="chart-scroll-box" id="chartScrollBox">
+                    <div class="chart-wrapper"><canvas id="mainChart"></canvas></div>
+                </div>
+                <div class="y-slider-container" id="rightSliderBox" style="display:none; background:#f3f0ff; border-color:#e5dbff;">
+                    <input type="range" id="rightMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" oninput="updateRightMax(this.value)">
                 </div>
             </div>
-        </div>
-        <div class="bottom-controls">
-            <div class="x-zoom-container" id="simpleZoomContainer">
-                <span class="x-slider-label">↔️ X축 간격 조절:</span>
-                <input type="range" id="xZoomSlider" class="zoom-slider-horizontal" min="30" max="200" value="60" oninput="updateXScale(this.value)">
+
+            <div class="table-container" id="tableView">
+                <table id="dataTable">
+                    <thead><tr><th>항목</th></tr></thead>
+                    <tbody></tbody>
+                </table>
             </div>
-            <div class="range-slider-container" id="rangeSliderContainer">
+        </div>
+
+        <div class="bottom-controls">
+            <div id="simpleZoomContainer" style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:12px;">↔ 간격</span>
+                <input type="range" id="xZoomSlider" style="flex:1;" min="30" max="200" value="60" oninput="updateXScale(this.value)">
+            </div>
+            <div id="rangeSliderContainer" style="display:none; margin-top:10px;">
                 <div id="rangeSlider"></div>
-                <div class="range-info" id="rangeInfo">기간을 선택하세요</div>
+                <div id="rangeInfo" style="text-align:center; font-size:12px; margin-top:5px;"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // 1. 전역 변수 및 설정
-        // ==========================================
         Chart.register(ChartDataLabels);
-        
-        let metadata = {}; 
-        let currentCompData = null; 
-        let currentCompName = '';
-        let currentTab = 'PL_MIX';
-        let myChart = null;
-        let currentDataLength = 0;
-        let currentLabels = [];
-        let originalMaxY = 0, originalMinY = 0, originalMaxY1 = 0, originalMinY1 = 0; 
+        let metadata={}, currentCompData=null, currentCompName='', currentTab='PL_MIX', myChart=null, currentViewMode='graph';
+        let originalMaxY=0, originalMinY=0, originalMaxY1=0, originalMinY1=0, currentDataLength=0;
 
-        // 차트 구성 설정
+        // v5.2 설정 유지 (색상, 항목 등)
         const CONFIG_MAP = {
             '일반': {
                 'PL_MIX': { type: 'financial', sources: ['PL', 'Profitability'], left_items: [{key: '매출액', color: '#36A2EB', type: 'bar'}, {key: '영업이익', color: '#FF6384', type: 'bar'}], right_items: [{key: '매출총이익률', color: '#FFCE56', type: 'line'}, {key: '영업이익률', color: '#4BC0C0', 'type': 'line'}] },
@@ -177,367 +180,271 @@
 
         const ORDER_PRIORITY = ['영업수익', '매출액', '영업이익', '순이익률', '매출총이익률', '영업이익률', '자산총계', '부채총계', '자본총계', '부채비율', '영업활동CF', '투자활동CF', '재무활동CF', '시가총액', '주가'];
 
-        // ==========================================
-        // 2. 초기화 및 Fetch 로직
-        // ==========================================
-        window.onload = async function() {
+        // 테이블 정의
+        const TABLE_ROWS = {
+            'PL_MIX': [
+                {k:'매출액', l:'매출액(수익)'}, {k:'매출총이익', l:'매출총이익'}, {k:'매출총이익률', l:'GP%', p:true},
+                {k:'판매비와관리비', l:'판매비와관리비'}, {k:'영업이익', l:'영업이익'}, {k:'영업이익률', l:'OP%', p:true},
+                {k:'영업외손익', l:'영업외손익'}, {k:'당기순이익', l:'당기순이익'}, {k:'순이익률', l:'NI%', p:true}
+            ],
+            'BS_MIX': [
+                {k:'자산총계', l:'자산총계'}, {k:'부채총계', l:'부채총계'}, {k:'자본총계', l:'자본총계'}, {k:'부채비율', l:'부채비율', p:true}
+            ],
+            'CF': [
+                {k:'영업활동CF', l:'영업활동CF'}, {k:'투자활동CF', l:'투자활동CF'}, {k:'재무활동CF', l:'재무활동CF'}, {k:'기초현금', l:'기초현금'}, {k:'기말현금', l:'기말현금'}
+            ]
+        };
+
+        window.onload = async () => {
             try {
-                const response = await fetch('metadata.json');
-                metadata = await response.json();
-                
-                const compList = document.getElementById('compList');
-                Object.keys(metadata).sort().forEach(name => {
-                    let op = document.createElement('option');
-                    op.value = name;
-                    compList.appendChild(op);
-                });
-                
-                const firstComp = Object.keys(metadata).sort()[0];
-                if(firstComp) {
-                    document.getElementById('companyInput').value = firstComp;
-                    loadCompanyData(firstComp);
-                }
-            } catch (e) {
-                console.error(e);
-                alert("초기 데이터 로딩 실패! (metadata.json 파일이 있는지 확인하세요)");
-            }
+                metadata = await (await fetch('metadata.json')).json();
+                const list = document.getElementById('compList');
+                Object.keys(metadata).sort().forEach(n => { let o=document.createElement('option'); o.value=n; list.appendChild(o); });
+                const first = Object.keys(metadata).sort()[0];
+                if(first) { document.getElementById('companyInput').value=first; loadCompanyData(first); }
+            } catch(e) { alert("Loading Fail"); }
         };
 
         async function loadCompanyData(name) {
-            if (!metadata[name]) return;
-            document.getElementById('loadingOverlay').style.display = 'block';
+            if(!metadata[name]) return;
+            document.getElementById('loadingOverlay').style.display='block';
             currentCompName = name;
-            const code = metadata[name].code;
             try {
-                const res = await fetch(`data/${code}.json`);
-                if(!res.ok) throw new Error(`파일을 찾을 수 없습니다: data/${code}.json`);
+                const res = await fetch(`data/${metadata[name].code}.json`);
+                if(!res.ok) throw new Error("File missing");
                 currentCompData = await res.json();
-                updateMetaInfo();
-                initPeriodSelect();
-                updateChart(false);
-            } catch (e) {
-                console.error("Fetch Error:", e);
-                alert("데이터 로딩 오류: " + e.message);
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
+                updateMetaInfo(); initPeriodSelect(); updateChart();
+            } catch(e) { alert("Data Error: "+e.message); }
+            finally { document.getElementById('loadingOverlay').style.display='none'; }
         }
 
-        document.getElementById('companyInput').addEventListener('change', (e) => {
-            loadCompanyData(e.target.value);
-        });
-
-        // ==========================================
-        // 3. 차트 및 UI 업데이트 로직 (함수들)
-        // ==========================================
-        function updateMetaInfo() {
-            if(!currentCompData) return;
-            const d = currentCompData;
-            const b = document.getElementById('industryBadge');
-            b.style.display = 'inline-block';
-            b.textContent = d.type === '금융'?'금융':'일반';
-            b.className = 'badge ' + (d.type==='금융'?'fin':'gen');
-            const sep = document.getElementById('sep'), con = document.getElementById('con');
-            const hasSep = d.data['별도'] && Object.keys(d.data['별도']).length > 0;
-            const hasCon = d.data['연결'] && Object.keys(d.data['연결']).length > 0;
-            if(!hasCon) { con.disabled=true; sep.checked=true; } else con.disabled=false;
-            if(!hasSep) { sep.disabled=true; con.checked=true; } else sep.disabled=false;
-        }
-
-        function toggleCompareMode() { 
-            const chk = document.getElementById('compareToggle');
-            const inp = document.getElementById('compareInput'); 
-            if (chk.checked) { inp.classList.add('active'); inp.focus(); } 
-            else { inp.classList.remove('active'); inp.value = ''; updateChart(false); } 
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            document.getElementById('btnGraph').className = mode==='graph' ? 'view-btn active' : 'view-btn';
+            document.getElementById('btnTable').className = mode==='table' ? 'view-btn active' : 'view-btn';
+            document.getElementById('graphView').style.display = mode==='graph' ? 'flex' : 'none';
+            document.getElementById('tableView').className = mode==='table' ? 'table-container active' : 'table-container';
+            // 테이블 모드면 차트 컨트롤 숨김
+            document.querySelector('.bottom-controls').style.display = mode==='graph' ? 'block' : 'none';
+            if(mode==='table') updateChart();
         }
 
         function setTab(tab, btn) {
-            currentTab = tab; 
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-            btn.classList.add('active');
-            
-            const compType = (currentCompData && currentCompData.type) || '일반';
-            const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
-            const isStock = currentConfig[currentTab].type === 'stock';
-            
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+            const conf = getCurrConfig();
+            const isStock = conf.type === 'stock';
             document.getElementById('consolControl').style.display = isStock ? 'none' : 'flex';
             document.getElementById('periodSelect').style.visibility = isStock ? 'hidden' : 'visible';
             document.getElementById('stockOptions').style.display = isStock ? 'flex' : 'none';
+            document.getElementById('rightSliderBox').style.display = isStock ? 'flex' : 'none'; // Stock uses right slider
             document.getElementById('simpleZoomContainer').style.display = isStock ? 'none' : 'flex';
             document.getElementById('rangeSliderContainer').style.display = isStock ? 'block' : 'none';
-            document.getElementById('rightSliderBox').style.display = isStock ? 'flex' : 'none';
             
             const box = document.getElementById('chartScrollBox');
-            if (isStock) box.classList.add('no-scroll'); else box.classList.remove('no-scroll');
-            updateChart(false);
+            if(isStock) box.classList.add('no-scroll'); else box.classList.remove('no-scroll');
+
+            if(isStock && currentViewMode==='table') setViewMode('graph'); 
+            updateChart();
         }
 
-        function initPeriodSelect() { 
-            const sel = document.getElementById('periodSelect'); sel.innerHTML = ''; 
-            const opts = [{'v': 'ALL_Q', 't': '전체 분기 추이'}, {'v': 'ALL_Y', 't': '연도별 합계'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'CUM_1Q', 't': '1분기 누적'}, {'v': 'CUM_2Q', 't': '상반기 누적'}, {'v': 'CUM_3Q', 't': '3분기 누적'}, {'v': 'CUM_4Q', 't': '연간 누적'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'COMP_1Q', 't': '1Q 비교'}, {'v': 'COMP_2Q', 't': '2Q 비교'}, {'v': 'COMP_3Q', 't': '3Q 비교'}, {'v': 'COMP_4Q', 't': '4Q 비교'}]; 
-            opts.forEach(o => { let e = document.createElement('option'); e.value = o.v; e.text = o.t; if(o.d) e.disabled = true; sel.appendChild(e); }); 
-            const type = document.querySelector('input[name="consol"]:checked').value; 
-            let years = new Set(); 
-            const compType = (currentCompData && currentCompData.type) || '일반';
-            const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
-            currentConfig['PL_MIX'].sources.forEach(src => { 
-                if(currentCompData.data[type] && currentCompData.data[type][src]) 
-                    currentCompData.data[type][src].forEach(r => years.add(r.year)); 
-            }); 
-            let d2 = document.createElement('option'); d2.disabled = true; d2.text = "──────────"; sel.appendChild(d2); 
-            Array.from(years).sort().forEach(y => { let e = document.createElement('option'); e.value = y; e.text = y + "년 상세"; sel.appendChild(e); }); 
+        function getCurrConfig() {
+            const type = (currentCompData && currentCompData.type) || '일반';
+            return (CONFIG_MAP[type] || CONFIG_MAP['일반'])[currentTab];
         }
 
-        function calculateMA(data, period) { 
-            let ma = []; 
-            for (let i = 0; i < data.length; i++) { 
-                if (i < period - 1) { ma.push(null); continue; } 
-                let sum = 0; 
-                for (let j = 0; j < period; j++) sum += data[i - j].close; 
-                ma.push(sum / period); 
-            } 
-            return ma; 
-        }
-
-        function getPerformanceData(compData, consolType, stockDates) {
-            if (!compData || !compData.data[consolType]) return { rev: [], prof: [] };
-            let plData = compData.data[consolType]['PL'] || [];
-            const qEndMap = {1: '03-31', 2: '06-30', 3: '09-30', 4: '12-31'};
-            let rMap = {}, pMap = {};
-            plData.forEach(item => { 
-                if(item.year && item.quarter) { 
-                    const dStr = `${item.year}-${qEndMap[item.quarter]}`; 
-                    rMap[dStr] = item['매출액'] || item['영업수익'] || 0; 
-                    pMap[dStr] = item['영업이익'] || 0; 
-                } 
-            });
-            let rev = Array(stockDates.length).fill(null), prof = Array(stockDates.length).fill(null);
-            Object.keys(rMap).forEach(td => {
-                let idx = stockDates.indexOf(td);
-                if (idx === -1) for (let i = stockDates.length - 1; i >= 0; i--) if (stockDates[i] < td) { idx = i; break; }
-                if (idx !== -1) { rev[idx] = rMap[td] === 0 ? null : rMap[td]; prof[idx] = pMap[td] === 0 ? null : pMap[td]; }
-            });
-            return { rev, prof };
-        }
-
-        function typeLabel(q) { if(q===1) return '1Q누적'; if(q===2) return '상반기'; if(q===3) return '3Q누적'; return '연간'; }
-
-        // ==========================================
-        // 4. 차트 업데이트 (Core Logic)
-        // ==========================================
+        // ===============================================
+        // 4. 통합 업데이트 함수 (v5.2 차트 + v6.0 테이블)
+        // ===============================================
         async function updateChart(keepZoom = false) {
-            try {
-                if (!currentCompData) return;
-                
-                const canvas = document.getElementById('mainChart');
-                if(!canvas) return;
-                const ctx = canvas.getContext('2d');
+            if(!currentCompData) return;
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const consol = document.querySelector('input[name="consol"]:checked').value;
+            const tabCfg = getCurrConfig();
+            const isStock = tabCfg.type === 'stock';
+            const period = document.getElementById('periodSelect').value;
+            const unit = parseFloat(document.getElementById('unitSelect').value);
+            const showOverlay = document.getElementById('resultOverlay').checked && isStock;
 
-                const consolType = document.querySelector('input[name="consol"]:checked').value;
-                const compType = currentCompData.type || '일반';
-                const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
-                const tabCfg = currentConfig[currentTab];
+            const isComp = document.getElementById('compareToggle').checked;
+            const compBName = document.getElementById('compareInput').value;
+            let compBData = null;
+            if (isComp && compBName && metadata[compBName]) {
+                try {
+                    const res = await fetch(`data/${metadata[compBName].code}.json`);
+                    if(res.ok) compBData = await res.json();
+                } catch(e) {}
+            }
+            const hasComp = !!compBData;
 
-                let savedStartIdx = 0, savedEndIdx = 0;
-                let savedRightMax = 110; 
-                
-                if (keepZoom) {
-                    const sliderEl = document.getElementById('rangeSlider');
-                    if (sliderEl && sliderEl.noUiSlider) {
-                        const vals = sliderEl.noUiSlider.get(); 
-                        savedStartIdx = parseInt(vals[0]); savedEndIdx = parseInt(vals[1]);
-                    }
-                    savedRightMax = document.getElementById('rightMaxSlider').value;
-                }
+            // ------------------------------------
+            // A. 데이터 준비 (proc 로직)
+            // ------------------------------------
+            let finalLabels=[], finalDataA=[], finalDataB=[];
 
-                const isComp = document.getElementById('compareToggle').checked;
-                const compBName = document.getElementById('compareInput').value;
-                let compBData = null;
-                if (isComp && compBName && metadata[compBName]) {
-                    try {
-                        const res = await fetch(`data/${metadata[compBName].code}.json`);
-                        if(res.ok) compBData = await res.json();
-                    } catch(e) { console.log("비교 데이터 로딩 실패"); }
-                }
-                const hasComp = !!compBData;
+            if(isStock) {
+                // [v5.2 주식 데이터 처리]
+                const getS = (d) => d && d.stock_data ? d.stock_data : [];
+                let sA = getS(currentCompData), sB = hasComp ? getS(compBData) : [];
+                let allD = new Set(sA.map(d=>d.date)); if(hasComp) sB.forEach(d=>allD.add(d.date));
+                finalLabels = Array.from(allD).sort();
+                const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
+                finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
+            } else {
+                // [v5.2 이익률 재계산 로직]
+                const proc = (dObj) => {
+                    let m={}; if(!dObj || !dObj.data[consol]) return [];
+                    (tabCfg.sources||['PL']).forEach(s => {
+                        if(dObj.data[consol][s]) dObj.data[consol][s].forEach(r => m[r.label] = {...(m[r.label]||{}), ...r});
+                    });
+                    let f = Object.values(m).sort((a,b) => (a.year-b.year)||(a.quarter-b.quarter));
+                    
+                    if(period==='ALL_Y' || period.startsWith('CUM_')) {
+                        const ys = [...new Set(f.map(d=>d.year))];
+                        const tQ = period.startsWith('CUM_') ? parseInt(period.split('_')[1].replace('Q','')) : 4;
+                        return ys.map(y => {
+                            const its = f.filter(d => d.year===y && d.quarter<=tQ);
+                            if(!its.length) return null;
+                            let r = {label: `${y}년 ${typeLabel(tQ)}`, year:y};
+                            const sum = (k) => its.reduce((a,c) => a+(c[k]||0), 0);
+                            
+                            // 값 합산 및 비율 재계산 (테이블 & 차트 공용)
+                            const sales = sum('매출액') || sum('영업수익');
+                            const gp = sum('매출총이익');
+                            const op = sum('영업이익');
+                            const ni = sum('당기순이익') || sum('순이익');
+                            
+                            // 기본값들 채우기
+                            [...tabCfg.left_items, ...tabCfg.right_items, ...TABLE_ROWS['PL_MIX'], ...TABLE_ROWS['BS_MIX'], ...TABLE_ROWS['CF']].forEach(item => {
+                                let k = item.key || item.k;
+                                if(!k) return;
+                                if(['자산총계','부채총계','자본총계','기말현금','부채비율'].includes(k)) {
+                                    r[k] = its[its.length-1][k];
+                                } else {
+                                    r[k] = sum(k);
+                                }
+                            });
 
-                const period = document.getElementById('periodSelect').value;
-                let unitDiv = parseFloat(document.getElementById('unitSelect').value);
-                const isStock = tabCfg.type === 'stock';
-                const showOverlay = document.getElementById('resultOverlay').checked && isStock;
-
-                let finalLabels = [], finalDataA = [], finalDataB = [];
-
-                if (isStock) {
-                    const getS = (d) => d && d.stock_data ? d.stock_data : [];
-                    let sA = getS(currentCompData), sB = hasComp ? getS(compBData) : [];
-                    let allD = new Set(sA.map(d=>d.date)); if(hasComp) sB.forEach(d=>allD.add(d.date));
-                    finalLabels = Array.from(allD).sort();
-                    const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
-                    finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
-                } else {
-                    // [핵심] 재계산 로직 함수 정의 (proc) - else 블록 안으로 이동!
-                    const proc = (dObj) => {
-                        let m = {}; 
-                        if (!dObj || !dObj.data[consolType]) return [];
-
-                        tabCfg.sources.forEach(s => {
-                            if (dObj.data[consolType][s]) {
-                                dObj.data[consolType][s].forEach(r => {
-                                    m[r.label] = { ...(m[r.label] || {}), ...r };
-                                });
+                            // 비율 강제 재계산
+                            if(sales) {
+                                r['매출총이익률'] = (gp/sales)*100;
+                                r['영업이익률'] = (op/sales)*100;
+                                r['순이익률'] = (ni/sales)*100;
                             }
-                        });
+                            return r;
+                        }).filter(d=>d);
+                    } else if(period.startsWith('COMP_')) {
+                        return f.filter(d => d.quarter === parseInt(period.split('_')[1].replace('Q','')));
+                    } else if(period !== 'ALL_Q') {
+                        return f.filter(d => d.year == period);
+                    }
+                    return f;
+                };
+                finalDataA = proc(currentCompData);
+                finalDataB = hasComp ? proc(compBData) : [];
+                let allL = new Set(finalDataA.map(d=>d.label)); if(hasComp) finalDataB.forEach(d=>allL.add(d.label));
+                finalLabels = Array.from(allL).sort();
+                const mapD = (s,l) => l.map(lb=>s.find(d=>d.label===lb)||{});
+                finalDataA = mapD(finalDataA, finalLabels); finalDataB = hasComp ? mapD(finalDataB, finalLabels) : [];
+            }
 
-                        let f = Object.values(m).sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
-
-                        if (period === 'ALL_Y' || period.startsWith('CUM_')) {
-                            const ys = [...new Set(f.map(d => d.year))];
-                            const tQ = period.startsWith('CUM_') ? parseInt(period.split('_')[1].replace('Q', '')) : 4;
-
-                            return ys.map(y => {
-                                const its = f.filter(d => d.year === y && d.quarter <= tQ);
-                                if (!its.length) return null;
-
-                                let r = { label: y + '년' + (period.startsWith('CUM_') ? ` ${typeLabel(tQ)}` : '') };
-                                const sumVal = (key) => its.reduce((acc, curr) => acc + (curr[key] || 0), 0);
-
-                                const sales = sumVal('매출액') || sumVal('영업수익');
-                                const profitOp = sumVal('영업이익');
-                                const profitGross = sumVal('매출총이익');
-                                const profitNet = sumVal('당기순이익') || sumVal('순이익');
-
-                                [...tabCfg.left_items, ...tabCfg.right_items].forEach(i => {
-                                    const k = i.key;
-                                    if (k === '영업이익률' && sales !== 0) r[k] = (profitOp / sales) * 100;
-                                    else if (k === '매출총이익률' && sales !== 0) r[k] = (profitGross / sales) * 100;
-                                    else if (k === '순이익률' && sales !== 0) r[k] = (profitNet / sales) * 100;
-                                    else if (['자산총계', '부채총계', '자본총계', '부채비율'].includes(k)) r[k] = its[its.length - 1][k];
-                                    else r[k] = sumVal(k);
-                                });
-                                return r;
-                            }).filter(d => d !== null);
-
-                        } else if (period.startsWith('COMP_')) {
-                            return f.filter(d => d.quarter === parseInt(period.split('_')[1].replace('Q', '')));
-                        } else if (period !== 'ALL_Q') {
-                            return f.filter(d => d.year == period);
-                        }
-                        
-                        return f;
-                    };
-
-                    let dA = proc(currentCompData), dB = hasComp ? proc(compBData) : [];
-                    let allL = new Set(dA.map(d=>d.label)); if(hasComp) dB.forEach(d=>allL.add(d.label));
-                    finalLabels = Array.from(allL).sort();
-                    const mapD = (s,l) => l.map(lb=>s.find(d=>d.label===lb)||{});
-                    finalDataA = mapD(dA, finalLabels); finalDataB = hasComp ? mapD(dB, finalLabels) : [];
-                }
-
+            // ------------------------------------
+            // B. 렌더링 분기
+            // ------------------------------------
+            if (currentViewMode === 'table' && !isStock) {
+                renderTable(finalDataA, unit);
+            } else {
+                // v5.2 차트 렌더링 로직 (상세 기능 복원)
                 currentDataLength = finalLabels.length;
                 const fs = window.innerWidth<=768?10:12;
-
-                if (!isStock) {
-                    const sliderVal = document.getElementById('xZoomSlider').value;
-                    updateXScale(sliderVal);
-                } else {
-                    document.querySelector('.chart-wrapper').style.width = '100%';
-                    currentLabels = finalLabels;
-                    if (keepZoom) initRangeSlider(currentLabels, savedStartIdx, savedEndIdx); else initRangeSlider(currentLabels);
+                
+                // 슬라이더 및 범위 설정
+                let savedStartIdx=0, savedEndIdx=0;
+                if(keepZoom && isStock) {
+                    const sliderEl = document.getElementById('rangeSlider');
+                    if(sliderEl && sliderEl.noUiSlider) {
+                        const vals = sliderEl.noUiSlider.get();
+                        savedStartIdx = parseInt(vals[0]); savedEndIdx = parseInt(vals[1]);
+                    }
                 }
 
-                let maxY=0, minY=0, maxY1=-Infinity, minY1=Infinity; 
+                // 축 계산
+                let maxY=0, minY=0, maxY1=-Infinity, minY1=Infinity;
                 if(!isStock) {
-                    maxY1 = 0; minY1 = 0; 
-                    const calc = (d) => {
-                        if(!d)return;
-                        tabCfg.left_items.forEach(i=>{let v=(d[i.key]||0)/unitDiv; if(v>maxY)maxY=v; if(v<minY)minY=v;});
-                        tabCfg.right_items.forEach(i=>{let v=(d[i.key]||0); if(v>maxY1)maxY1=v; if(v<minY1)minY1=v;});
+                    maxY1=0; minY1=0;
+                    const check = (d) => {
+                        if(!d) return;
+                        tabCfg.left_items.forEach(i=>{ let v=(d[i.key]||0)/unit; if(v>maxY)maxY=v; if(v<minY)minY=v; });
+                        tabCfg.right_items.forEach(i=>{ let v=(d[i.key]||0); if(v>maxY1)maxY1=v; if(v<minY1)minY1=v; });
                     };
-                    finalDataA.forEach(calc); if(hasComp) finalDataB.forEach(calc);
+                    finalDataA.forEach(check); if(hasComp) finalDataB.forEach(check);
                 } else {
                     finalDataA.forEach(d => { if(d.high>0) { maxY1=Math.max(maxY1,d.high); minY1=Math.min(minY1,d.low); } });
                     if(hasComp) finalDataB.forEach(d => { if(d.high>0) { maxY1=Math.max(maxY1,d.high); minY1=Math.min(minY1,d.low); } });
-                    if(maxY1 === -Infinity) maxY1 = 100;
-                    if(minY1 === Infinity) minY1 = 0;
+                    if(maxY1===-Infinity) maxY1=100; if(minY1===Infinity) minY1=0;
                     if(showOverlay) {
-                        const pData = getPerformanceData(currentCompData, consolType, finalLabels);
-                        [...pData.rev, ...pData.prof].forEach(v => { if(v!==null){ let val=v/unitDiv; if(val>maxY)maxY=val; if(val<minY)minY=val; } });
+                        const pData = getPerformanceData(currentCompData, consol, finalLabels);
+                        [...pData.rev, ...pData.prof].forEach(v => { if(v!==null){ let val=v/unit; if(val>maxY)maxY=val; if(val<minY)minY=val; } });
                     }
                 }
+                originalMaxY=maxY*1.1; originalMinY=minY*1.1; originalMaxY1=maxY1*1.1; originalMinY1=minY1*0.9;
+                
+                if(!keepZoom) { ['leftMaxSlider','leftMinSlider','rightMaxSlider','rightMinSlider'].forEach(id=>document.getElementById(id).value=110); }
 
-                originalMaxY=maxY*1.1; originalMinY=minY*1.1; 
-                originalMaxY1=maxY1*1.1; originalMinY1=minY1*0.9; 
-
-                if (!keepZoom) { ['leftMaxSlider','leftMinSlider','rightMaxSlider','rightMinSlider'].forEach(id=>document.getElementById(id).value=110); }
-
+                // 데이터셋 생성
                 let datasets = [];
                 const createDs = (isB, item, isLine, orderBase, customData=null) => {
                     const target = customData ? customData : (isB ? finalDataB : finalDataA);
                     const name = isB ? compBName : currentCompName;
-                    const labelName = item.label || item.key;
-                    const label = hasComp ? `${name} - ${labelName}` : labelName;
+                    const label = hasComp ? `${name}-${item.label||item.key}` : (item.label||item.key);
                     let color = item.color, dash = item.borderDash||[], pStyle = item.type==='bar'?'rect':'circle';
-                    
-                    if(item.key === 'marcap' && !isB) { color = 'transparent'; pStyle = 'circle'; } 
-                    else if(isB){
-                        if(['매출액','자산총계','재무활동CF','marcap','영업수익'].includes(item.key)) color='#7f8c8d';
-                        else if(['영업이익','자본총계','투자활동CF','close'].includes(item.key)) color='#bdc3c7';
-                        else color='#95a5a6';
-                        if(item.type==='line') dash=[5, 5]; pStyle=item.type==='bar'?'rect':'triangle';
-                    }
-                    const pRad = isStock ? (customData ? 4 : 0) : (window.innerWidth <= 768 ? 2 : 3);
-                    let yID = isLine && !customData ? 'y1' : 'y';
-                    if (item.key === 'marcap') yID = 'y_marcap';
+                    if(item.key==='marcap' && !isB) { color='transparent'; pStyle='circle'; }
+                    else if(isB) { color='#95a5a6'; if(item.type==='line') dash=[5,5]; pStyle='triangle'; }
+                    let yID = (isLine && !customData && item.key!=='marcap') ? 'y1' : 'y';
+                    if(item.key==='marcap') yID='y_marcap';
 
                     return {
                         label: label,
                         data: target.map(d => {
                             let val = customData ? d : (d[item.key]||0);
-                            if (customData && val === null) return null;
-                            return isLine && !customData && item.key !== 'marcap' ? val : Math.round(val/unitDiv);
+                            if(customData && val===null) return null;
+                            return (isLine && !customData && item.key!=='marcap') ? val : Math.round(val/unit);
                         }),
                         backgroundColor: isB?'transparent':(item.fill?color+'33':color),
                         borderColor: color, type: item.type, yAxisID: yID,
                         fill: item.fill&&!isB, order: orderBase+(isB?1:0),
                         pointStyle: pStyle, borderDash: dash, tension: 0.4, borderWidth: 2,
-                        pointRadius: pRad, pointHoverRadius: 5, spanGaps: true, hidden: false, 
-                        datalabels: { display: (ctx)=>!isStock&&!isB&&ctx.dataset.data.length<50, anchor:'end', align:'top', color:isLine?item.color:undefined, font:{size:fs}, formatter:isLine&&!isStock?(v)=>v.toFixed(1)+'%':(v)=>v.toLocaleString() }
+                        pointRadius: isStock? (customData?4:0) : 3, spanGaps: true,
+                        datalabels: { display: (c)=>!isStock&&!isB&&c.dataset.data.length<50, anchor:'end', align:'top', font:{size:fs}, formatter:(v)=>(isLine&&!isStock)?v.toFixed(1)+'%':v.toLocaleString() }
                     };
                 };
 
-                if (isStock) {
+                if(isStock) {
                     const candles = finalDataA.map(d => ({ x: d.date, o: d.open, h: d.high, l: d.low, c: d.close }));
-                    datasets.push({ label: currentCompName, data: candles, type: 'candlestick', yAxisID: 'y1', order: 1, color: { up: '#e74c3c', down: '#3498db', unchanged: '#999' }, datalabels: { display: false } });
-                    const maColors = {5: '#2ecc71', 10: '#9b59b6', 20: '#f1c40f', 60: '#e67e22', 120: '#95a5a6'};
+                    datasets.push({ label: currentCompName, data: candles, type: 'candlestick', yAxisID: 'y1', order: 1, color: { up: '#e74c3c', down: '#3498db', unchanged: '#999' }, datalabels:{display:false} });
+                    const maColors = {5:'#2ecc71', 20:'#f1c40f', 60:'#e67e22'};
                     document.querySelectorAll('.ma-chk:checked').forEach(chk => {
                         const p = parseInt(chk.value);
-                        datasets.push({ label: `MA${p}`, data: calculateMA(finalDataA, p), type: 'line', yAxisID: 'y1', borderColor: maColors[p]||'#333', borderWidth: 1, pointRadius: 0, order: 0, datalabels: { display: false } });
+                        datasets.push({ label: `MA${p}`, data: calculateMA(finalDataA, p), type: 'line', yAxisID: 'y1', borderColor: maColors[p]||'#333', borderWidth: 1, pointRadius: 0, order: 0, datalabels:{display:false} });
                     });
-                    tabCfg.left_items.forEach(i=>{ datasets.push(createDs(false, i, false, 10)); });
-                    if(hasComp) datasets.push({ label: compBName+' (종가)', data: finalDataB.map(d=>d.close), type: 'line', yAxisID: 'y1', borderColor: '#7f8c8d', borderWidth: 2, pointRadius: 0, borderDash: [5,5], order: 2, datalabels: { display: false } });
-                    if (showOverlay) {
-                        const pData = getPerformanceData(currentCompData, consolType, finalLabels);
-                        datasets.push(createDs(false, {key:'overlay_rev', label:'매출/수익(실적)', color:'#36A2EB', type:'line', borderDash:[2, 2]}, false, 5, pData.rev));
-                        datasets.push(createDs(false, {key:'overlay_prof', label:'영업이익(실적)', color:'#FF6384', type:'line', borderDash:[2, 2]}, false, 5, pData.prof));
+                    tabCfg.left_items.forEach(i=>datasets.push(createDs(false, i, false, 10)));
+                    if(showOverlay) {
+                        const pData = getPerformanceData(currentCompData, consol, finalLabels);
+                        datasets.push(createDs(false, {key:'overlay_rev', label:'매출(실적)', color:'#36A2EB', type:'line', borderDash:[2,2]}, false, 5, pData.rev));
+                        datasets.push(createDs(false, {key:'overlay_prof', label:'이익(실적)', color:'#FF6384', type:'line', borderDash:[2,2]}, false, 5, pData.prof));
                     }
                 } else {
                     tabCfg.left_items.forEach(i=>{ datasets.push(createDs(false, i, false, 10)); if(hasComp) datasets.push(createDs(true, i, false, 11)); });
                     tabCfg.right_items.forEach(i=>{ datasets.push(createDs(false, i, true, 0)); if(hasComp) datasets.push(createDs(true, i, true, 1)); });
                 }
 
-                if (myChart) myChart.destroy();
+                if(myChart) myChart.destroy();
                 const hasRight = tabCfg.right_items.length > 0 || isStock;
                 document.getElementById('rightSliderBox').style.display = hasRight ? 'flex' : 'none';
-
-                const rMaxFactor = keepZoom ? document.getElementById('rightMaxSlider').value / 100 : 1.1;
                 
-                let y1Options = {};
-                if (isStock) {
-                    y1Options = { type: 'linear', display: hasRight, position: 'right', min: originalMinY1 * 0.9, max: originalMaxY1 * rMaxFactor, ticks: { font: {size: fs} }, grid: { drawOnChartArea: false } };
-                } else {
-                    y1Options = { type: 'linear', display: hasRight, position: 'right', suggestedMin: originalMinY1, suggestedMax: originalMaxY1, ticks: { font: {size: fs} }, grid: { drawOnChartArea: false } };
-                }
+                let y1Opt = isStock 
+                    ? { type: 'linear', display: hasRight, position: 'right', min: originalMinY1*0.9, max: originalMaxY1*(keepZoom?document.getElementById('rightMaxSlider').value/100:1.1), grid:{drawOnChartArea:false} }
+                    : { type: 'linear', display: hasRight, position: 'right', suggestedMin: originalMinY1, suggestedMax: originalMaxY1, grid:{drawOnChartArea:false} };
 
                 myChart = new Chart(ctx, {
                     type: 'bar',
@@ -545,39 +452,101 @@
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 12, padding: 15, font: {size: fs+1}, sort: (a,b) => { const gk=(s)=>s.includes(' - ')?s.split(' - ')[1]:s; const ai=ORDER_PRIORITY.indexOf(gk(a.text)), bi=ORDER_PRIORITY.indexOf(gk(b.text)); if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi; } } },
-                            tooltip: { bodyFont: {size: fs+2}, titleFont: {size: fs+2}, callbacks: { label: (c) => { let v=c.raw, l=c.dataset.label; if(c.dataset.type==='candlestick') return `${l}: 시${v.o} 고${v.h} 저${v.l} 종${v.c}`; if(c.dataset.yAxisID==='y1'&&!isStock) return l+': '+v.toFixed(1)+'%'; else return l+': '+v.toLocaleString(); } } }
-                        },
+                        plugins: { legend: { position: 'top', labels:{ boxWidth:12, font:{size:fs+1} } } },
                         scales: {
-                            x: { type: isStock?'time':'category', time: { unit: 'month', tooltipFormat: 'yyyy-MM-dd', displayFormats: { month: 'yy.MM' } }, ticks: { font: {size: fs}, maxRotation: 0, source: 'auto' }, offset: !isStock, min: keepZoom&&isStock?finalLabels[savedStartIdx]:undefined, max: keepZoom&&isStock?finalLabels[savedEndIdx]:undefined },
-                            y: { display: !isStock || showOverlay, position: 'left', suggestedMax: originalMaxY, suggestedMin: originalMinY, ticks: { font: {size: fs} }, grid: { drawOnChartArea: true } },
-                            y1: y1Options,
-                            y_marcap: { type: 'linear', display: false } 
+                            x: { type: isStock?'time':'category', time:{unit:'month', displayFormats:{month:'yy.MM'}}, offset:!isStock, min: (keepZoom&&isStock)?finalLabels[savedStartIdx]:undefined, max: (keepZoom&&isStock)?finalLabels[savedEndIdx]:undefined },
+                            y: { display: !isStock||showOverlay, position:'left', suggestedMax: originalMaxY, suggestedMin: originalMinY },
+                            y1: y1Opt,
+                            y_marcap: { type: 'linear', display: false }
                         }
                     }
                 });
-                
-                if (isStock && !keepZoom) initRangeSlider(finalLabels);
+
+                if(isStock && !keepZoom) initRangeSlider(finalLabels);
                 else if(!isStock) updateXScale(document.getElementById('xZoomSlider').value);
-
-            } catch (err) { console.error(err); alert("차트 그리기 오류: " + err.message); }
+            }
         }
 
-        // ==========================================
-        // 5. 슬라이더 및 기타 유틸리티
-        // ==========================================
-        function updateLeftMax(val) { if (myChart) { myChart.options.scales.y.max = (originalMaxY>0?originalMaxY:1000)*(val/100); myChart.update(); }}
-        function updateLeftMin(val) { if (myChart) { let b = originalMinY<0?originalMinY:-(originalMaxY*0.1); if(b===0)b=-1000; myChart.options.scales.y.min = b*(val/100); myChart.update(); }}
-        function updateRightMax(val) { if (myChart && myChart.options.scales.y1) { myChart.options.scales.y1.max = (originalMaxY1>0?originalMaxY1:10)*(val/100); myChart.update(); }}
-        function updateRightMin(val) { if (myChart && myChart.options.scales.y1) { let b = originalMinY1<0?originalMinY1:-(originalMaxY1*0.1); if(b===0)b=-10; myChart.options.scales.y1.min = b*(val/100); myChart.update(); }}
+        // --- 테이블 렌더링 ---
+        function renderTable(data, unit) {
+            const tableHead = document.querySelector('#dataTable thead tr');
+            const tableBody = document.querySelector('#dataTable tbody');
+            tableHead.innerHTML = '<th>항목</th>';
+            tableBody.innerHTML = '';
+
+            if(!data || data.length === 0) { tableBody.innerHTML = '<tr><td colspan="5">데이터 없음</td></tr>'; return; }
+
+            data.forEach(d => {
+                let th = document.createElement('th');
+                th.innerText = d.label;
+                tableHead.appendChild(th);
+            });
+
+            const rows = TABLE_ROWS[currentTab] || [];
+            rows.forEach(rowDef => {
+                let tr = document.createElement('tr');
+                if(rowDef.p) tr.className = 'row-pct';
+                
+                let tdName = document.createElement('td');
+                tdName.innerText = rowDef.l;
+                tr.appendChild(tdName);
+
+                data.forEach(d => {
+                    let td = document.createElement('td');
+                    let val = d[rowDef.k]; 
+                    if (val === undefined || val === null) {
+                        td.innerText = '-';
+                    } else {
+                        if (rowDef.p) { 
+                            td.innerText = val.toFixed(1) + '%';
+                            if(val < 0) td.style.color = 'red';
+                        } else { 
+                            td.innerText = Math.round(val / unit).toLocaleString();
+                        }
+                    }
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // --- 유틸리티 함수들 ---
+        function typeLabel(q) { return q===2?'상반기':q===4?'연간':q+'Q누적'; }
+        function updateMetaInfo() {
+            const d = currentCompData;
+            document.getElementById('industryBadge').innerText = d.type;
+            document.getElementById('industryBadge').className = 'badge ' + (d.type==='금융'?'fin':'gen');
+            const sep = document.getElementById('sep'), con = document.getElementById('con');
+            if(!d.data['연결']) { con.disabled=true; sep.checked=true; } else con.disabled=false;
+            if(!d.data['별도']) { sep.disabled=true; con.checked=true; } else sep.disabled=false;
+        }
+        function initPeriodSelect() {
+            const s = document.getElementById('periodSelect'); s.innerHTML='';
+            ['ALL_Q','ALL_Y','divider','CUM_1Q','CUM_2Q','CUM_3Q','CUM_4Q','divider','COMP_1Q','COMP_2Q','COMP_3Q','COMP_4Q'].forEach(v => { 
+                let o=document.createElement('option'); 
+                if(v==='divider'){o.text='──'; o.disabled=true;} 
+                else {o.value=v; o.text=v;} 
+                s.appendChild(o); 
+            });
+        }
+        function calculateMA(data, period) { 
+            let ma = []; for(let i=0; i<data.length; i++) { if(i<period-1){ma.push(null); continue;} let sum=0; for(let j=0; j<period; j++) sum+=data[i-j].close; ma.push(sum/period); } return ma; 
+        }
+        function getPerformanceData(compData, consolType, stockDates) {
+            if (!compData || !compData.data[consolType]) return { rev: [], prof: [] };
+            let plData = compData.data[consolType]['PL'] || [];
+            const qEndMap = {1: '03-31', 2: '06-30', 3: '09-30', 4: '12-31'};
+            let rMap = {}, pMap = {};
+            plData.forEach(item => { if(item.year && item.quarter) { const dStr = `${item.year}-${qEndMap[item.quarter]}`; rMap[dStr] = item['매출액']||item['영업수익']||0; pMap[dStr] = item['영업이익']||0; } });
+            let rev = Array(stockDates.length).fill(null), prof = Array(stockDates.length).fill(null);
+            Object.keys(rMap).forEach(td => { let idx = stockDates.indexOf(td); if (idx === -1) for (let i = stockDates.length - 1; i >= 0; i--) if (stockDates[i] < td) { idx = i; break; } if (idx !== -1) { rev[idx] = rMap[td]===0?null:rMap[td]; prof[idx] = pMap[td]===0?null:pMap[td]; } });
+            return { rev, prof };
+        }
+        function updateLeftMax(v) { if(myChart) { myChart.options.scales.y.max = (originalMaxY||100)*(v/100); myChart.update(); }}
+        function updateLeftMin(v) { if(myChart) { myChart.options.scales.y.min = (originalMinY||0)*(v/100); myChart.update(); }}
+        function updateRightMax(v) { if(myChart) { myChart.options.scales.y1.max = (originalMaxY1||10)*(v/100); myChart.update(); }}
+        function updateXScale(v) { document.querySelector('.chart-wrapper').style.width = Math.max(document.querySelector('.chart-scroll-box').clientWidth, currentDataLength*v)+'px'; }
         
-        function updateXScale(val) { 
-            const wrap = document.querySelector('.chart-wrapper'); const box = document.querySelector('.chart-scroll-box');
-            if (CONFIG_MAP[currentCompData.type || '일반'][currentTab].type === 'stock') return;
-            wrap.style.width = Math.max(box.clientWidth, (currentDataLength||10)*val) + 'px'; 
-        }
-
         function initRangeSlider(labels) {
             const sliderEl = document.getElementById('rangeSlider'); if (!sliderEl) return;
             if (sliderEl.noUiSlider) sliderEl.noUiSlider.destroy();
@@ -586,14 +555,15 @@
             sliderEl.noUiSlider.on('update', function (values) {
                 const sVal = parseInt(values[0]), eVal = parseInt(values[1]);
                 document.getElementById('rangeInfo').innerText = `${labels[sVal]} ~ ${labels[eVal]}`;
-                if (myChart && CONFIG_MAP[currentCompData.type || '일반'][currentTab].type === 'stock') { 
+                if (myChart && getCurrConfig().type === 'stock') { 
                     myChart.options.scales.x.min = labels[sVal]; myChart.options.scales.x.max = labels[eVal]; myChart.update('none'); 
                 }
             });
         }
         function downloadExcel() { if (!currentCompData) return; const type = document.querySelector('input[name="consol"]:checked').value; const wb = XLSX.utils.book_new(); ['PL', 'BS', 'CF', 'Profitability', 'Stability'].forEach(s => { if (currentCompData.data[type][s]) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(currentCompData.data[type][s]), s); }); if (currentCompData.stock_data) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(currentCompData.stock_data), 'Stock_Price'); XLSX.writeFile(wb, `${currentCompName}_통합데이터.xlsx`); }
-        
-        window.addEventListener('resize', () => { if(myChart) updateChart(true); });
+
+        document.getElementById('companyInput').addEventListener('change', (e)=>loadCompanyData(e.target.value));
+        window.addEventListener('resize', ()=>updateChart());
     </script>
 </body>
 </html>
