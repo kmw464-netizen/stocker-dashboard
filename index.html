@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financial Dashboard (Mobile Fixed)</title>
+    <title>Financial Dashboard (Final)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -68,7 +68,7 @@
 <body>
     <div class="card">
         <div id="loadingOverlay">데이터 불러오는 중...</div>
-        <div class="maker-sign">Made by KMW | v5.1 Fixed</div>
+        <div class="maker-sign">Made by KMW | v5.2 Final (BugFix)</div>
         <div class="header">
             <div><h2>📈 기업 재무 분석 <span id="industryBadge" class="badge gen" style="display:none">일반</span></h2></div>
             <div class="controls">
@@ -150,8 +150,7 @@
         Chart.register(ChartDataLabels);
         
         let metadata = {}; 
-        let currentCompData = null; // 현재 선택된 기업의 데이터 (Fetch로 가져옴)
-        
+        let currentCompData = null; 
         let currentCompName = '';
         let currentTab = 'PL_MIX';
         let myChart = null;
@@ -193,7 +192,6 @@
                     compList.appendChild(op);
                 });
                 
-                // 첫 번째 기업 자동 로딩
                 const firstComp = Object.keys(metadata).sort()[0];
                 if(firstComp) {
                     document.getElementById('companyInput').value = firstComp;
@@ -205,27 +203,21 @@
             }
         };
 
-        // 기업 선택 시 데이터 가져오기
         async function loadCompanyData(name) {
             if (!metadata[name]) return;
-            
             document.getElementById('loadingOverlay').style.display = 'block';
             currentCompName = name;
             const code = metadata[name].code;
-            
             try {
-                // Fetch 요청: data 폴더 안의 JSON 파일을 가져옴
                 const res = await fetch(`data/${code}.json`);
                 if(!res.ok) throw new Error(`파일을 찾을 수 없습니다: data/${code}.json`);
-                
                 currentCompData = await res.json();
-                
                 updateMetaInfo();
                 initPeriodSelect();
                 updateChart(false);
             } catch (e) {
                 console.error("Fetch Error:", e);
-                alert("데이터 로딩 오류: " + e.message + "\n\n[확인사항]\n1. 'data' 폴더가 HTML 파일과 같은 위치에 있나요?\n2. 파이썬 서버가 해당 폴더에서 실행 중인가요?");
+                alert("데이터 로딩 오류: " + e.message);
             } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
@@ -236,7 +228,7 @@
         });
 
         // ==========================================
-        // 3. 차트 및 UI 업데이트 로직 (복원됨)
+        // 3. 차트 및 UI 업데이트 로직 (함수들)
         // ==========================================
         function updateMetaInfo() {
             if(!currentCompData) return;
@@ -245,11 +237,9 @@
             b.style.display = 'inline-block';
             b.textContent = d.type === '금융'?'금융':'일반';
             b.className = 'badge ' + (d.type==='금융'?'fin':'gen');
-            
             const sep = document.getElementById('sep'), con = document.getElementById('con');
             const hasSep = d.data['별도'] && Object.keys(d.data['별도']).length > 0;
             const hasCon = d.data['연결'] && Object.keys(d.data['연결']).length > 0;
-            
             if(!hasCon) { con.disabled=true; sep.checked=true; } else con.disabled=false;
             if(!hasSep) { sep.disabled=true; con.checked=true; } else sep.disabled=false;
         }
@@ -286,12 +276,10 @@
             const sel = document.getElementById('periodSelect'); sel.innerHTML = ''; 
             const opts = [{'v': 'ALL_Q', 't': '전체 분기 추이'}, {'v': 'ALL_Y', 't': '연도별 합계'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'CUM_1Q', 't': '1분기 누적'}, {'v': 'CUM_2Q', 't': '상반기 누적'}, {'v': 'CUM_3Q', 't': '3분기 누적'}, {'v': 'CUM_4Q', 't': '연간 누적'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'COMP_1Q', 't': '1Q 비교'}, {'v': 'COMP_2Q', 't': '2Q 비교'}, {'v': 'COMP_3Q', 't': '3Q 비교'}, {'v': 'COMP_4Q', 't': '4Q 비교'}]; 
             opts.forEach(o => { let e = document.createElement('option'); e.value = o.v; e.text = o.t; if(o.d) e.disabled = true; sel.appendChild(e); }); 
-            
             const type = document.querySelector('input[name="consol"]:checked').value; 
             let years = new Set(); 
             const compType = (currentCompData && currentCompData.type) || '일반';
             const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
-            
             currentConfig['PL_MIX'].sources.forEach(src => { 
                 if(currentCompData.data[type] && currentCompData.data[type][src]) 
                     currentCompData.data[type][src].forEach(r => years.add(r.year)); 
@@ -316,7 +304,6 @@
             let plData = compData.data[consolType]['PL'] || [];
             const qEndMap = {1: '03-31', 2: '06-30', 3: '09-30', 4: '12-31'};
             let rMap = {}, pMap = {};
-            
             plData.forEach(item => { 
                 if(item.year && item.quarter) { 
                     const dStr = `${item.year}-${qEndMap[item.quarter]}`; 
@@ -342,7 +329,6 @@
             try {
                 if (!currentCompData) return;
                 
-                // [★ 중요 수정] ctx 선언 위치 수정
                 const canvas = document.getElementById('mainChart');
                 if(!canvas) return;
                 const ctx = canvas.getContext('2d');
@@ -366,7 +352,6 @@
 
                 const isComp = document.getElementById('compareToggle').checked;
                 const compBName = document.getElementById('compareInput').value;
-                
                 let compBData = null;
                 if (isComp && compBName && metadata[compBName]) {
                     try {
@@ -390,12 +375,12 @@
                     finalLabels = Array.from(allD).sort();
                     const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
                     finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
-                // [수정된 proc 함수] 이익률 재계산 로직 적용
+                } else {
+                    // [핵심] 재계산 로직 함수 정의 (proc) - else 블록 안으로 이동!
                     const proc = (dObj) => {
                         let m = {}; 
                         if (!dObj || !dObj.data[consolType]) return [];
 
-                        // 1. 데이터 병합
                         tabCfg.sources.forEach(s => {
                             if (dObj.data[consolType][s]) {
                                 dObj.data[consolType][s].forEach(r => {
@@ -406,7 +391,6 @@
 
                         let f = Object.values(m).sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
 
-                        // 2. 기간별 집계 로직
                         if (period === 'ALL_Y' || period.startsWith('CUM_')) {
                             const ys = [...new Set(f.map(d => d.year))];
                             const tQ = period.startsWith('CUM_') ? parseInt(period.split('_')[1].replace('Q', '')) : 4;
@@ -416,31 +400,19 @@
                                 if (!its.length) return null;
 
                                 let r = { label: y + '년' + (period.startsWith('CUM_') ? ` ${typeLabel(tQ)}` : '') };
-
-                                // 합계 계산 헬퍼 함수
                                 const sumVal = (key) => its.reduce((acc, curr) => acc + (curr[key] || 0), 0);
 
-                                // 분모/분자 데이터 확보
                                 const sales = sumVal('매출액') || sumVal('영업수익');
                                 const profitOp = sumVal('영업이익');
                                 const profitGross = sumVal('매출총이익');
                                 const profitNet = sumVal('당기순이익') || sumVal('순이익');
 
-                                // 각 항목별 값 채우기
                                 [...tabCfg.left_items, ...tabCfg.right_items].forEach(i => {
                                     const k = i.key;
-
-                                    // (A) 이익률 재계산
                                     if (k === '영업이익률' && sales !== 0) r[k] = (profitOp / sales) * 100;
                                     else if (k === '매출총이익률' && sales !== 0) r[k] = (profitGross / sales) * 100;
                                     else if (k === '순이익률' && sales !== 0) r[k] = (profitNet / sales) * 100;
-                                    
-                                    // (B) 재무상태표(BS) -> 기말 잔액 사용
-                                    else if (['자산총계', '부채총계', '자본총계', '부채비율'].includes(k)) {
-                                        r[k] = its[its.length - 1][k];
-                                    }
-                                    
-                                    // (C) 나머지 -> 단순 합산
+                                    else if (['자산총계', '부채총계', '자본총계', '부채비율'].includes(k)) r[k] = its[its.length - 1][k];
                                     else r[k] = sumVal(k);
                                 });
                                 return r;
@@ -454,6 +426,7 @@
                         
                         return f;
                     };
+
                     let dA = proc(currentCompData), dB = hasComp ? proc(compBData) : [];
                     let allL = new Set(dA.map(d=>d.label)); if(hasComp) dB.forEach(d=>allL.add(d.label));
                     finalLabels = Array.from(allL).sort();
@@ -473,7 +446,6 @@
                     if (keepZoom) initRangeSlider(currentLabels, savedStartIdx, savedEndIdx); else initRangeSlider(currentLabels);
                 }
 
-                // 축 범위 계산
                 let maxY=0, minY=0, maxY1=-Infinity, minY1=Infinity; 
                 if(!isStock) {
                     maxY1 = 0; minY1 = 0; 
@@ -567,7 +539,6 @@
                     y1Options = { type: 'linear', display: hasRight, position: 'right', suggestedMin: originalMinY1, suggestedMax: originalMaxY1, ticks: { font: {size: fs} }, grid: { drawOnChartArea: false } };
                 }
 
-                // [중요] ctx 변수 사용
                 myChart = new Chart(ctx, {
                     type: 'bar',
                     data: { labels: finalLabels, datasets: datasets },
