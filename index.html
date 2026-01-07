@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financial Dashboard v6.1</title>
+    <title>Financial Dashboard v6.2 (Strict)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -28,7 +28,7 @@
         .controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: #f8f9fa; padding: 8px; border-radius: 8px; flex: 1; }
         input, select, button { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; }
         
-        /* 뷰 전환 스위치 */
+        /* 뷰 전환 스위치 (추가됨) */
         .view-switch { display: flex; background: #e9ecef; border-radius: 6px; padding: 2px; margin-left: auto; }
         .view-btn { padding: 6px 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: #666; border-radius: 4px; transition: 0.2s; }
         .view-btn.active { background: white; color: var(--point); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -46,23 +46,21 @@
         .chart-scroll-box.no-scroll { overflow-x: hidden; }
         .chart-wrapper { height: 100%; min-width: 100%; position: relative; }
         
-        /* 테이블 뷰 */
+        /* 테이블 뷰 (추가됨) */
         .table-container { display: none; flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: white; }
         .table-container.active { display: block; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
         th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: right; }
-        th { background: #f1f3f5; position: sticky; top: 0; z-index: 1; font-weight: 600; color: #444; text-align: center; border-bottom: 2px solid #ddd; }
-        th:first-child, td:first-child { position: sticky; left: 0; background: inherit; z-index: 2; text-align: left; border-right: 2px solid #eee; font-weight: bold; min-width: 120px; }
-        th:first-child { z-index: 3; }
+        th { background: #f1f3f5; position: sticky; top: 0; z-index: 10; font-weight: 600; color: #444; text-align: center; border-bottom: 2px solid #ddd; }
+        th:first-child, td:first-child { position: sticky; left: 0; background: inherit; z-index: 20; text-align: left; border-right: 2px solid #eee; font-weight: bold; min-width: 120px; }
         tr:hover { background-color: #f8f9fa; }
         .row-pct { color: #666; font-size: 12px; font-style: italic; background-color: #fafafa; }
 
-        /* 슬라이더 및 기타 */
         .y-slider-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 30px; background: #fff9e6; border-radius: 8px; border: 1px solid #ffeeba; }
         .zoom-slider-vertical { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 6px; flex: 1; margin: 5px 0; }
-        .bottom-controls { margin-top: 10px; padding: 0 5px; }
+        .right-slider-min-box { display: flex; flex-direction: column; align-items: center; flex: 1; width: 100%; }
         
-        /* v5.2의 옵션들 복원 */
+        .bottom-controls { margin-top: 10px; padding: 0 5px; }
         .option-group { display: none; gap: 5px; }
         .overlay-box, .ma-box { display: flex; align-items: center; gap: 5px; background: #fff4e6; padding: 4px 8px; border-radius: 6px; border: 1px solid #ffe8cc; font-size: 12px; }
         .ma-box { background: #e8f6f3; border-color: #d1f2eb; }
@@ -75,6 +73,7 @@
 <body>
     <div class="card">
         <div id="loadingOverlay">데이터 불러오는 중...</div>
+        <div class="maker-sign">Made by KMW | v6.2 Strict (v5.2 Based)</div>
         <div class="header">
             <div><h2>📈 기업 분석 <span id="industryBadge" class="badge gen">일반</span></h2></div>
             <div class="view-switch">
@@ -131,8 +130,12 @@
                 <div class="chart-scroll-box" id="chartScrollBox">
                     <div class="chart-wrapper"><canvas id="mainChart"></canvas></div>
                 </div>
-                <div class="y-slider-container" id="rightSliderBox" style="display:none; background:#f3f0ff; border-color:#e5dbff;">
+                <div class="y-slider-container right-side" id="rightSliderBox" style="display:none; background:#f3f0ff; border-color:#e5dbff;">
                     <input type="range" id="rightMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" oninput="updateRightMax(this.value)">
+                    <div style="width:100%; height:1px; background:#ccc;"></div>
+                    <div class="right-slider-min-box" id="rightMinSliderContainer">
+                        <input type="range" id="rightMinSlider" class="zoom-slider-vertical" min="50" max="300" value="110" oninput="updateRightMin(this.value)">
+                    </div>
                 </div>
             </div>
 
@@ -161,7 +164,6 @@
         let metadata={}, currentCompData=null, currentCompName='', currentTab='PL_MIX', myChart=null, currentViewMode='graph';
         let originalMaxY=0, originalMinY=0, originalMaxY1=0, originalMinY1=0, currentDataLength=0;
 
-        // v5.2 설정 유지 (색상, 항목 등)
         const CONFIG_MAP = {
             '일반': {
                 'PL_MIX': { type: 'financial', sources: ['PL', 'Profitability'], left_items: [{key: '매출액', color: '#36A2EB', type: 'bar'}, {key: '영업이익', color: '#FF6384', type: 'bar'}], right_items: [{key: '매출총이익률', color: '#FFCE56', type: 'line'}, {key: '영업이익률', color: '#4BC0C0', 'type': 'line'}] },
@@ -178,9 +180,7 @@
         };
         Object.keys(CONFIG_MAP).forEach(k => Object.assign(CONFIG_MAP[k], COMMON_CONFIG));
 
-        const ORDER_PRIORITY = ['영업수익', '매출액', '영업이익', '순이익률', '매출총이익률', '영업이익률', '자산총계', '부채총계', '자본총계', '부채비율', '영업활동CF', '투자활동CF', '재무활동CF', '시가총액', '주가'];
-
-        // 테이블 정의
+        // [New] 테이블용 행 정의
         const TABLE_ROWS = {
             'PL_MIX': [
                 {k:'매출액', l:'매출액(수익)'}, {k:'매출총이익', l:'매출총이익'}, {k:'매출총이익률', l:'GP%', p:true},
@@ -194,6 +194,8 @@
                 {k:'영업활동CF', l:'영업활동CF'}, {k:'투자활동CF', l:'투자활동CF'}, {k:'재무활동CF', l:'재무활동CF'}, {k:'기초현금', l:'기초현금'}, {k:'기말현금', l:'기말현금'}
             ]
         };
+
+        const ORDER_PRIORITY = ['영업수익', '매출액', '영업이익', '순이익률', '매출총이익률', '영업이익률', '자산총계', '부채총계', '자본총계', '부채비율', '영업활동CF', '투자활동CF', '재무활동CF', '시가총액', '주가'];
 
         window.onload = async () => {
             try {
@@ -218,14 +220,14 @@
             finally { document.getElementById('loadingOverlay').style.display='none'; }
         }
 
+        // [New] 뷰 모드 전환 함수
         function setViewMode(mode) {
             currentViewMode = mode;
             document.getElementById('btnGraph').className = mode==='graph' ? 'view-btn active' : 'view-btn';
             document.getElementById('btnTable').className = mode==='table' ? 'view-btn active' : 'view-btn';
             document.getElementById('graphView').style.display = mode==='graph' ? 'flex' : 'none';
             document.getElementById('tableView').className = mode==='table' ? 'table-container active' : 'table-container';
-            // 테이블 모드면 차트 컨트롤 숨김
-            document.querySelector('.bottom-controls').style.display = mode==='graph' ? 'block' : 'none';
+            document.querySelector('.bottom-controls').style.display = mode==='graph' ? 'block' : 'none'; // 하단 컨트롤 토글
             if(mode==='table') updateChart();
         }
 
@@ -237,13 +239,14 @@
             document.getElementById('consolControl').style.display = isStock ? 'none' : 'flex';
             document.getElementById('periodSelect').style.visibility = isStock ? 'hidden' : 'visible';
             document.getElementById('stockOptions').style.display = isStock ? 'flex' : 'none';
-            document.getElementById('rightSliderBox').style.display = isStock ? 'flex' : 'none'; // Stock uses right slider
+            document.getElementById('rightSliderBox').style.display = isStock ? 'flex' : 'none';
             document.getElementById('simpleZoomContainer').style.display = isStock ? 'none' : 'flex';
             document.getElementById('rangeSliderContainer').style.display = isStock ? 'block' : 'none';
             
             const box = document.getElementById('chartScrollBox');
             if(isStock) box.classList.add('no-scroll'); else box.classList.remove('no-scroll');
 
+            // 주가 탭에서는 테이블 보기 강제 해제 (선택사항)
             if(isStock && currentViewMode==='table') setViewMode('graph'); 
             updateChart();
         }
@@ -253,8 +256,25 @@
             return (CONFIG_MAP[type] || CONFIG_MAP['일반'])[currentTab];
         }
 
+        // v5.2 initPeriodSelect (원상복구)
+        function initPeriodSelect() { 
+            const sel = document.getElementById('periodSelect'); sel.innerHTML = ''; 
+            const opts = [{'v': 'ALL_Q', 't': '전체 분기 추이'}, {'v': 'ALL_Y', 't': '연도별 합계'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'CUM_1Q', 't': '1분기 누적'}, {'v': 'CUM_2Q', 't': '상반기 누적'}, {'v': 'CUM_3Q', 't': '3분기 누적'}, {'v': 'CUM_4Q', 't': '연간 누적'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'COMP_1Q', 't': '1Q 비교'}, {'v': 'COMP_2Q', 't': '2Q 비교'}, {'v': 'COMP_3Q', 't': '3Q 비교'}, {'v': 'COMP_4Q', 't': '4Q 비교'}]; 
+            opts.forEach(o => { let e = document.createElement('option'); e.value = o.v; e.text = o.t; if(o.d) e.disabled = true; sel.appendChild(e); }); 
+            const type = document.querySelector('input[name="consol"]:checked').value; 
+            let years = new Set(); 
+            const compType = (currentCompData && currentCompData.type) || '일반';
+            const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
+            currentConfig['PL_MIX'].sources.forEach(src => { 
+                if(currentCompData.data[type] && currentCompData.data[type][src]) 
+                    currentCompData.data[type][src].forEach(r => years.add(r.year)); 
+            }); 
+            let d2 = document.createElement('option'); d2.disabled = true; d2.text = "──────────"; sel.appendChild(d2); 
+            Array.from(years).sort().forEach(y => { let e = document.createElement('option'); e.value = y; e.text = y + "년 상세"; sel.appendChild(e); }); 
+        }
+
         // ===============================================
-        // 4. 통합 업데이트 함수 (v5.2 차트 + v6.0 테이블)
+        // 4. 통합 업데이트 함수 (v5.2 차트 + 테이블)
         // ===============================================
         async function updateChart(keepZoom = false) {
             if(!currentCompData) return;
@@ -278,12 +298,11 @@
             const hasComp = !!compBData;
 
             // ------------------------------------
-            // A. 데이터 준비 (proc 로직)
+            // A. 데이터 준비 (v5.2 proc 로직 유지)
             // ------------------------------------
             let finalLabels=[], finalDataA=[], finalDataB=[];
 
             if(isStock) {
-                // [v5.2 주식 데이터 처리]
                 const getS = (d) => d && d.stock_data ? d.stock_data : [];
                 let sA = getS(currentCompData), sB = hasComp ? getS(compBData) : [];
                 let allD = new Set(sA.map(d=>d.date)); if(hasComp) sB.forEach(d=>allD.add(d.date));
@@ -291,7 +310,7 @@
                 const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
                 finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
             } else {
-                // [v5.2 이익률 재계산 로직]
+                // [v5.2] 이익률 재계산 로직 유지
                 const proc = (dObj) => {
                     let m={}; if(!dObj || !dObj.data[consol]) return [];
                     (tabCfg.sources||['PL']).forEach(s => {
@@ -314,9 +333,9 @@
                             const op = sum('영업이익');
                             const ni = sum('당기순이익') || sum('순이익');
                             
-                            // 기본값들 채우기
+                            // v5.2의 차트 아이템 + 테이블 아이템 모두 계산
                             [...tabCfg.left_items, ...tabCfg.right_items, ...TABLE_ROWS['PL_MIX'], ...TABLE_ROWS['BS_MIX'], ...TABLE_ROWS['CF']].forEach(item => {
-                                let k = item.key || item.k;
+                                let k = item.key || item.k; // 차트설정엔 key, 테이블엔 k
                                 if(!k) return;
                                 if(['자산총계','부채총계','자본총계','기말현금','부채비율'].includes(k)) {
                                     r[k] = its[its.length-1][k];
@@ -331,6 +350,7 @@
                                 r['영업이익률'] = (op/sales)*100;
                                 r['순이익률'] = (ni/sales)*100;
                             }
+                            if(r['자본총계']) r['부채비율'] = (r['부채총계']/r['자본총계'])*100;
                             return r;
                         }).filter(d=>d);
                     } else if(period.startsWith('COMP_')) {
@@ -358,7 +378,7 @@
                 currentDataLength = finalLabels.length;
                 const fs = window.innerWidth<=768?10:12;
                 
-                // 슬라이더 및 범위 설정
+                // 슬라이더 및 범위 설정 (v5.2)
                 let savedStartIdx=0, savedEndIdx=0;
                 if(keepZoom && isStock) {
                     const sliderEl = document.getElementById('rangeSlider');
@@ -368,7 +388,7 @@
                     }
                 }
 
-                // 축 계산
+                // 축 계산 (v5.2)
                 let maxY=0, minY=0, maxY1=-Infinity, minY1=Infinity;
                 if(!isStock) {
                     maxY1=0; minY1=0;
@@ -391,7 +411,7 @@
                 
                 if(!keepZoom) { ['leftMaxSlider','leftMinSlider','rightMaxSlider','rightMinSlider'].forEach(id=>document.getElementById(id).value=110); }
 
-                // 데이터셋 생성
+                // 데이터셋 생성 (v5.2)
                 let datasets = [];
                 const createDs = (isB, item, isLine, orderBase, customData=null) => {
                     const target = customData ? customData : (isB ? finalDataB : finalDataA);
@@ -422,12 +442,13 @@
                 if(isStock) {
                     const candles = finalDataA.map(d => ({ x: d.date, o: d.open, h: d.high, l: d.low, c: d.close }));
                     datasets.push({ label: currentCompName, data: candles, type: 'candlestick', yAxisID: 'y1', order: 1, color: { up: '#e74c3c', down: '#3498db', unchanged: '#999' }, datalabels:{display:false} });
-                    const maColors = {5:'#2ecc71', 20:'#f1c40f', 60:'#e67e22'};
+                    const maColors = {5:'#2ecc71', 10:'#9b59b6', 20:'#f1c40f', 60:'#e67e22', 120:'#95a5a6'};
                     document.querySelectorAll('.ma-chk:checked').forEach(chk => {
                         const p = parseInt(chk.value);
                         datasets.push({ label: `MA${p}`, data: calculateMA(finalDataA, p), type: 'line', yAxisID: 'y1', borderColor: maColors[p]||'#333', borderWidth: 1, pointRadius: 0, order: 0, datalabels:{display:false} });
                     });
                     tabCfg.left_items.forEach(i=>datasets.push(createDs(false, i, false, 10)));
+                    if(hasComp) datasets.push({ label: compBName+' (종가)', data: finalDataB.map(d=>d.close), type: 'line', yAxisID: 'y1', borderColor: '#7f8c8d', borderWidth: 2, pointRadius: 0, borderDash: [5,5], order: 2, datalabels: { display: false } });
                     if(showOverlay) {
                         const pData = getPerformanceData(currentCompData, consol, finalLabels);
                         datasets.push(createDs(false, {key:'overlay_rev', label:'매출(실적)', color:'#36A2EB', type:'line', borderDash:[2,2]}, false, 5, pData.rev));
@@ -452,7 +473,7 @@
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { position: 'top', labels:{ boxWidth:12, font:{size:fs+1} } } },
+                        plugins: { legend: { position: 'top', labels:{ boxWidth:12, font:{size:fs+1}, sort: (a,b) => { const gk=(s)=>s.includes(' - ')?s.split(' - ')[1]:s; const ai=ORDER_PRIORITY.indexOf(gk(a.text)), bi=ORDER_PRIORITY.indexOf(gk(b.text)); if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi; } } } },
                         scales: {
                             x: { type: isStock?'time':'category', time:{unit:'month', displayFormats:{month:'yy.MM'}}, offset:!isStock, min: (keepZoom&&isStock)?finalLabels[savedStartIdx]:undefined, max: (keepZoom&&isStock)?finalLabels[savedEndIdx]:undefined },
                             y: { display: !isStock||showOverlay, position:'left', suggestedMax: originalMaxY, suggestedMin: originalMinY },
@@ -467,7 +488,7 @@
             }
         }
 
-        // --- 테이블 렌더링 ---
+        // [New] 테이블 렌더링 함수
         function renderTable(data, unit) {
             const tableHead = document.querySelector('#dataTable thead tr');
             const tableBody = document.querySelector('#dataTable tbody');
@@ -493,7 +514,8 @@
 
                 data.forEach(d => {
                     let td = document.createElement('td');
-                    let val = d[rowDef.k]; 
+                    let val = d[rowDef.k] || d[rowDef.k.replace('률','율')]; // 혹시 모를 키값 방어
+                    
                     if (val === undefined || val === null) {
                         td.innerText = '-';
                     } else {
@@ -510,8 +532,8 @@
             });
         }
 
-        // --- 유틸리티 함수들 ---
-        function typeLabel(q) { return q===2?'상반기':q===4?'연간':q+'Q누적'; }
+        // --- 유틸리티 함수들 (v5.2 유지) ---
+        function typeLabel(q) { if(q===1) return '1Q누적'; if(q===2) return '상반기'; if(q===3) return '3Q누적'; return '연간'; }
         function updateMetaInfo() {
             const d = currentCompData;
             document.getElementById('industryBadge').innerText = d.type;
@@ -519,15 +541,6 @@
             const sep = document.getElementById('sep'), con = document.getElementById('con');
             if(!d.data['연결']) { con.disabled=true; sep.checked=true; } else con.disabled=false;
             if(!d.data['별도']) { sep.disabled=true; con.checked=true; } else sep.disabled=false;
-        }
-        function initPeriodSelect() {
-            const s = document.getElementById('periodSelect'); s.innerHTML='';
-            ['ALL_Q','ALL_Y','divider','CUM_1Q','CUM_2Q','CUM_3Q','CUM_4Q','divider','COMP_1Q','COMP_2Q','COMP_3Q','COMP_4Q'].forEach(v => { 
-                let o=document.createElement('option'); 
-                if(v==='divider'){o.text='──'; o.disabled=true;} 
-                else {o.value=v; o.text=v;} 
-                s.appendChild(o); 
-            });
         }
         function calculateMA(data, period) { 
             let ma = []; for(let i=0; i<data.length; i++) { if(i<period-1){ma.push(null); continue;} let sum=0; for(let j=0; j<period; j++) sum+=data[i-j].close; ma.push(sum/period); } return ma; 
@@ -545,6 +558,7 @@
         function updateLeftMax(v) { if(myChart) { myChart.options.scales.y.max = (originalMaxY||100)*(v/100); myChart.update(); }}
         function updateLeftMin(v) { if(myChart) { myChart.options.scales.y.min = (originalMinY||0)*(v/100); myChart.update(); }}
         function updateRightMax(v) { if(myChart) { myChart.options.scales.y1.max = (originalMaxY1||10)*(v/100); myChart.update(); }}
+        function updateRightMin(v) { if(myChart) { myChart.options.scales.y1.min = (originalMinY1||0)*(v/100); myChart.update(); }}
         function updateXScale(v) { document.querySelector('.chart-wrapper').style.width = Math.max(document.querySelector('.chart-scroll-box').clientWidth, currentDataLength*v)+'px'; }
         
         function initRangeSlider(labels) {
