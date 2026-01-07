@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financial Dashboard v6.2 (Strict)</title>
+    <title>Financial Dashboard v6.3</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -28,7 +28,6 @@
         .controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: #f8f9fa; padding: 8px; border-radius: 8px; flex: 1; }
         input, select, button { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; }
         
-        /* 뷰 전환 스위치 (추가됨) */
         .view-switch { display: flex; background: #e9ecef; border-radius: 6px; padding: 2px; margin-left: auto; }
         .view-btn { padding: 6px 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: #666; border-radius: 4px; transition: 0.2s; }
         .view-btn.active { background: white; color: var(--point); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -37,16 +36,13 @@
         .tab-btn { padding: 8px 14px; border: 1px solid var(--border); background: white; cursor: pointer; font-weight: 600; color: #555; border-radius: 20px; white-space: nowrap; font-size: 13px; }
         .tab-btn.active { background: #333; color: white; border-color: #333; }
 
-        /* 메인 컨테이너 */
         .main-container { position: relative; height: 60vh; min-height: 400px; display: flex; flex-direction: column; }
         
-        /* 그래프 뷰 */
         .chart-layout-row { display: flex; align-items: stretch; gap: 5px; flex: 1; min-height: 0; }
         .chart-scroll-box { flex: 1; border: 1px solid var(--border); border-radius: 8px; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; }
         .chart-scroll-box.no-scroll { overflow-x: hidden; }
         .chart-wrapper { height: 100%; min-width: 100%; position: relative; }
         
-        /* 테이블 뷰 (추가됨) */
         .table-container { display: none; flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: white; }
         .table-container.active { display: block; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
@@ -73,7 +69,7 @@
 <body>
     <div class="card">
         <div id="loadingOverlay">데이터 불러오는 중...</div>
-        <div class="maker-sign">Made by KMW | v6.2 Strict (v5.2 Based)</div>
+        <div class="maker-sign">Made by KMW | v6.3 Final (Unit Fix)</div>
         <div class="header">
             <div><h2>📈 기업 분석 <span id="industryBadge" class="badge gen">일반</span></h2></div>
             <div class="view-switch">
@@ -104,6 +100,7 @@
                 <select id="periodSelect" onchange="updateChart()" style="flex:1"></select>
                 <select id="unitSelect" onchange="updateChart()" style="width:80px;">
                     <option value="100000000" selected>억원</option>
+                    <option value="1000000000000">조원</option>
                     <option value="1000000">백만</option>
                 </select>
             </div>
@@ -180,7 +177,6 @@
         };
         Object.keys(CONFIG_MAP).forEach(k => Object.assign(CONFIG_MAP[k], COMMON_CONFIG));
 
-        // [New] 테이블용 행 정의
         const TABLE_ROWS = {
             'PL_MIX': [
                 {k:'매출액', l:'매출액(수익)'}, {k:'매출총이익', l:'매출총이익'}, {k:'매출총이익률', l:'GP%', p:true},
@@ -220,14 +216,13 @@
             finally { document.getElementById('loadingOverlay').style.display='none'; }
         }
 
-        // [New] 뷰 모드 전환 함수
         function setViewMode(mode) {
             currentViewMode = mode;
             document.getElementById('btnGraph').className = mode==='graph' ? 'view-btn active' : 'view-btn';
             document.getElementById('btnTable').className = mode==='table' ? 'view-btn active' : 'view-btn';
             document.getElementById('graphView').style.display = mode==='graph' ? 'flex' : 'none';
             document.getElementById('tableView').className = mode==='table' ? 'table-container active' : 'table-container';
-            document.querySelector('.bottom-controls').style.display = mode==='graph' ? 'block' : 'none'; // 하단 컨트롤 토글
+            document.querySelector('.bottom-controls').style.display = mode==='graph' ? 'block' : 'none';
             if(mode==='table') updateChart();
         }
 
@@ -246,7 +241,6 @@
             const box = document.getElementById('chartScrollBox');
             if(isStock) box.classList.add('no-scroll'); else box.classList.remove('no-scroll');
 
-            // 주가 탭에서는 테이블 보기 강제 해제 (선택사항)
             if(isStock && currentViewMode==='table') setViewMode('graph'); 
             updateChart();
         }
@@ -256,7 +250,6 @@
             return (CONFIG_MAP[type] || CONFIG_MAP['일반'])[currentTab];
         }
 
-        // v5.2 initPeriodSelect (원상복구)
         function initPeriodSelect() { 
             const sel = document.getElementById('periodSelect'); sel.innerHTML = ''; 
             const opts = [{'v': 'ALL_Q', 't': '전체 분기 추이'}, {'v': 'ALL_Y', 't': '연도별 합계'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'CUM_1Q', 't': '1분기 누적'}, {'v': 'CUM_2Q', 't': '상반기 누적'}, {'v': 'CUM_3Q', 't': '3분기 누적'}, {'v': 'CUM_4Q', 't': '연간 누적'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'COMP_1Q', 't': '1Q 비교'}, {'v': 'COMP_2Q', 't': '2Q 비교'}, {'v': 'COMP_3Q', 't': '3Q 비교'}, {'v': 'COMP_4Q', 't': '4Q 비교'}]; 
@@ -273,9 +266,6 @@
             Array.from(years).sort().forEach(y => { let e = document.createElement('option'); e.value = y; e.text = y + "년 상세"; sel.appendChild(e); }); 
         }
 
-        // ===============================================
-        // 4. 통합 업데이트 함수 (v5.2 차트 + 테이블)
-        // ===============================================
         async function updateChart(keepZoom = false) {
             if(!currentCompData) return;
             const ctx = document.getElementById('mainChart').getContext('2d');
@@ -297,9 +287,6 @@
             }
             const hasComp = !!compBData;
 
-            // ------------------------------------
-            // A. 데이터 준비 (v5.2 proc 로직 유지)
-            // ------------------------------------
             let finalLabels=[], finalDataA=[], finalDataB=[];
 
             if(isStock) {
@@ -310,7 +297,6 @@
                 const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
                 finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
             } else {
-                // [v5.2] 이익률 재계산 로직 유지
                 const proc = (dObj) => {
                     let m={}; if(!dObj || !dObj.data[consol]) return [];
                     (tabCfg.sources||['PL']).forEach(s => {
@@ -327,15 +313,13 @@
                             let r = {label: `${y}년 ${typeLabel(tQ)}`, year:y};
                             const sum = (k) => its.reduce((a,c) => a+(c[k]||0), 0);
                             
-                            // 값 합산 및 비율 재계산 (테이블 & 차트 공용)
                             const sales = sum('매출액') || sum('영업수익');
                             const gp = sum('매출총이익');
                             const op = sum('영업이익');
                             const ni = sum('당기순이익') || sum('순이익');
                             
-                            // v5.2의 차트 아이템 + 테이블 아이템 모두 계산
                             [...tabCfg.left_items, ...tabCfg.right_items, ...TABLE_ROWS['PL_MIX'], ...TABLE_ROWS['BS_MIX'], ...TABLE_ROWS['CF']].forEach(item => {
-                                let k = item.key || item.k; // 차트설정엔 key, 테이블엔 k
+                                let k = item.key || item.k;
                                 if(!k) return;
                                 if(['자산총계','부채총계','자본총계','기말현금','부채비율'].includes(k)) {
                                     r[k] = its[its.length-1][k];
@@ -344,7 +328,6 @@
                                 }
                             });
 
-                            // 비율 강제 재계산
                             if(sales) {
                                 r['매출총이익률'] = (gp/sales)*100;
                                 r['영업이익률'] = (op/sales)*100;
@@ -368,17 +351,12 @@
                 finalDataA = mapD(finalDataA, finalLabels); finalDataB = hasComp ? mapD(finalDataB, finalLabels) : [];
             }
 
-            // ------------------------------------
-            // B. 렌더링 분기
-            // ------------------------------------
             if (currentViewMode === 'table' && !isStock) {
                 renderTable(finalDataA, unit);
             } else {
-                // v5.2 차트 렌더링 로직 (상세 기능 복원)
                 currentDataLength = finalLabels.length;
                 const fs = window.innerWidth<=768?10:12;
                 
-                // 슬라이더 및 범위 설정 (v5.2)
                 let savedStartIdx=0, savedEndIdx=0;
                 if(keepZoom && isStock) {
                     const sliderEl = document.getElementById('rangeSlider');
@@ -388,7 +366,6 @@
                     }
                 }
 
-                // 축 계산 (v5.2)
                 let maxY=0, minY=0, maxY1=-Infinity, minY1=Infinity;
                 if(!isStock) {
                     maxY1=0; minY1=0;
@@ -411,7 +388,6 @@
                 
                 if(!keepZoom) { ['leftMaxSlider','leftMinSlider','rightMaxSlider','rightMinSlider'].forEach(id=>document.getElementById(id).value=110); }
 
-                // 데이터셋 생성 (v5.2)
                 let datasets = [];
                 const createDs = (isB, item, isLine, orderBase, customData=null) => {
                     const target = customData ? customData : (isB ? finalDataB : finalDataA);
@@ -488,7 +464,6 @@
             }
         }
 
-        // [New] 테이블 렌더링 함수
         function renderTable(data, unit) {
             const tableHead = document.querySelector('#dataTable thead tr');
             const tableBody = document.querySelector('#dataTable tbody');
@@ -514,7 +489,7 @@
 
                 data.forEach(d => {
                     let td = document.createElement('td');
-                    let val = d[rowDef.k] || d[rowDef.k.replace('률','율')]; // 혹시 모를 키값 방어
+                    let val = d[rowDef.k] || d[rowDef.k.replace('률','율')];
                     
                     if (val === undefined || val === null) {
                         td.innerText = '-';
@@ -532,7 +507,6 @@
             });
         }
 
-        // --- 유틸리티 함수들 (v5.2 유지) ---
         function typeLabel(q) { if(q===1) return '1Q누적'; if(q===2) return '상반기'; if(q===3) return '3Q누적'; return '연간'; }
         function updateMetaInfo() {
             const d = currentCompData;
