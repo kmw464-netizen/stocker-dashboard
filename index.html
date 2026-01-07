@@ -1,0 +1,571 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Financial Dashboard (Mobile Fixed)</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.1.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js"></script>
+    
+    <style>
+        :root { --primary: #333; --bg: #f0f2f5; --white: #ffffff; --point: #007bff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; font-size: 14px; }
+        .card { background: var(--white); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 1200px; margin: 0 auto; position: relative; }
+        .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .header h2 { margin: 0; font-size: 20px; font-weight: 700; color: #2c3e50; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; color: white; vertical-align: middle; margin-left: 5px; }
+        .badge.gen { background-color: #2ecc71; } .badge.fin { background: #f39c12; }
+        .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 10px; flex: 1; }
+        .compare-box { display: flex; align-items: center; gap: 5px; background: #eef2f5; padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd; }
+        .compare-input { width: 120px; padding: 8px; font-size: 13px; display: none; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
+        .compare-input.active { display: block; animation: fadeIn 0.3s; }
+        .option-group { display: none; gap: 10px; flex-wrap: wrap; }
+        .overlay-box, .ma-box { display: flex; align-items: center; gap: 5px; background: #fff4e6; padding: 5px 10px; border-radius: 6px; border: 1px solid #ffe8cc; }
+        .ma-box { background: #e8f6f3; border-color: #d1f2eb; }
+        .ma-checks { display: flex; gap: 8px; margin-left: 5px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        input, select, button { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; background: white; }
+        .toggle-group { display: flex; background: #e0e4e8; border-radius: 6px; padding: 3px; }
+        .toggle-label { padding: 8px 12px; cursor: pointer; font-size: 13px; font-weight: bold; color: #666; border-radius: 4px; transition: 0.2s; white-space: nowrap; }
+        .toggle-input { display: none; }
+        .toggle-input:checked + .toggle-label { background: white; color: var(--point); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .toggle-input:disabled + .toggle-label { color: #ccc; cursor: not-allowed; }
+        .excel-btn { background-color: #217346; color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { padding: 8px 16px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-weight: 600; color: #555; border-radius: 20px; white-space: nowrap; transition: 0.2s; flex-shrink: 0; font-size: 13px; }
+        .tab-btn.active { background: #333; color: white; border-color: #333; }
+        .chart-layout-row { display: flex; align-items: stretch; gap: 10px; height: 60vh; min-height: 400px; }
+        .y-slider-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 35px; background: #fff9e6; border-radius: 8px; padding: 5px 0; border: 1px solid #ffeeba; }
+        .y-slider-container.right-side { background: #f3f0ff; border-color: #e5dbff; }
+        .zoom-label { font-size: 10px; font-weight: bold; color: #856404; white-space: nowrap; transform: rotate(-90deg); margin: 10px 0; }
+        .right-side .zoom-label { color: #5f3dc4; }
+        .slider-divider { width: 80%; height: 1px; background: #ddd; margin: 5px 0; }
+        .zoom-slider-vertical { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 8px; flex: 1; outline: none; margin: 5px 0; }
+        .right-slider-min-box { display: flex; flex-direction: column; align-items: center; flex: 1; width: 100%; }
+        .chart-scroll-box { flex: 1; border: 1px solid #f0f0f0; border-radius: 8px; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; }
+        .chart-scroll-box.no-scroll { overflow-x: hidden; }
+        .chart-wrapper { height: 100%; min-width: 100%; position: relative; }
+        .bottom-controls { margin-top: 15px; padding: 0 15px; }
+        .x-zoom-container { display: flex; align-items: center; gap: 10px; background: #e7f5ff; padding: 8px 15px; border-radius: 8px; border: 1px solid #d0ebff; }
+        .x-slider-label { font-size: 12px; font-weight: bold; color: #004085; white-space: nowrap; }
+        .zoom-slider-horizontal { flex: 1; cursor: pointer; }
+        .range-slider-container { display: none; margin-top: 10px; }
+        .noUi-connect { background: #3498db; }
+        .noUi-handle { border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: grab; }
+        .range-info { text-align: center; margin-top: 5px; font-size: 12px; font-weight: bold; color: #666; }
+        
+        #loadingOverlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 100; text-align: center; padding-top: 200px; font-weight: bold; font-size: 1.2em; color: #007bff; border-radius: 12px; backdrop-filter: blur(2px); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="loadingOverlay">데이터 불러오는 중...</div>
+        <div class="maker-sign">Made by KMW | v5.1 Fixed</div>
+        <div class="header">
+            <div><h2>📈 기업 재무 분석 <span id="industryBadge" class="badge gen" style="display:none">일반</span></h2></div>
+            <div class="controls">
+                <input type="text" id="companyInput" list="compList" placeholder="기업명 검색..." style="flex:1; min-width:120px;">
+                <datalist id="compList"></datalist>
+                <div class="compare-box">
+                    <input type="checkbox" id="compareToggle" onchange="toggleCompareMode()">
+                    <label for="compareToggle" class="compare-label">🆚 비교하기</label>
+                    <input type="text" id="compareInput" list="compList" class="compare-input" placeholder="비교 기업..." onchange="updateChart()">
+                </div>
+                <div id="stockOptions" class="option-group">
+                    <div class="overlay-box"><input type="checkbox" id="resultOverlay" onchange="updateChart(true)"><label for="resultOverlay" class="overlay-label">📊 실적 오버레이</label></div>
+                    <div class="ma-box"><span class="ma-label">📈 MA:</span><div class="ma-checks">
+                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="5" checked onchange="updateChart(true)">5</label>
+                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="10" onchange="updateChart(true)">10</label>
+                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="20" checked onchange="updateChart(true)">20</label>
+                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="60" checked onchange="updateChart(true)">60</label>
+                        <label class="ma-item"><input type="checkbox" class="ma-chk" value="120" onchange="updateChart(true)">120</label>
+                    </div></div>
+                </div>
+                <div class="toggle-group" id="consolControl">
+                    <input type="radio" id="sep" name="consol" value="별도" class="toggle-input" checked onchange="updateChart()"><label for="sep" class="toggle-label" id="sepLabel">별도</label>
+                    <input type="radio" id="con" name="consol" value="연결" class="toggle-input" onchange="updateChart()"><label for="con" class="toggle-label" id="conLabel">연결</label>
+                </div>
+                <div style="display:flex; gap:5px;" id="periodControl">
+                    <select id="periodSelect" onchange="updateChart()" style="flex:1"></select>
+                    <select id="unitSelect" onchange="updateChart()" style="flex:1">
+                        <option value="1000000">단위: 백만원</option>
+                        <option value="100000000" selected>단위: 억원</option>
+                        <option value="1000000000000">단위: 조원</option>
+                    </select>
+                </div>
+                <button class="excel-btn" onclick="downloadExcel()">💾 Excel</button>
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="setTab('PL_MIX', this)">손익계산서</button>
+            <button class="tab-btn" onclick="setTab('BS_MIX', this)">재무상태표</button>
+            <button class="tab-btn" onclick="setTab('CF', this)">현금흐름표</button>
+            <button class="tab-btn" onclick="setTab('STOCK', this)">📊 주가/시총</button>
+        </div>
+        <div class="chart-layout-row">
+            <div class="y-slider-container" id="leftSliderBox">
+                <span class="zoom-label" style="color:red">▲상한</span>
+                <input type="range" id="leftMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateLeftMax(this.value)">
+                <div class="slider-divider"></div>
+                <input type="range" id="leftMinSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateLeftMin(this.value)">
+                <span class="zoom-label" style="color:blue">▼하한</span>
+            </div>
+            <div class="chart-scroll-box" id="chartScrollBox">
+                <div class="chart-wrapper"><canvas id="mainChart"></canvas></div>
+            </div>
+            <div class="y-slider-container right-side" id="rightSliderBox" style="display:none;">
+                <span class="zoom-label" style="color:red">▲상한</span>
+                <input type="range" id="rightMaxSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateRightMax(this.value)">
+                <div class="slider-divider" id="rightSliderDivider"></div>
+                <div class="right-slider-min-box" id="rightMinSliderContainer">
+                    <input type="range" id="rightMinSlider" class="zoom-slider-vertical" min="50" max="300" value="110" step="10" oninput="updateRightMin(this.value)">
+                    <span class="zoom-label" style="color:blue">▼하한</span>
+                </div>
+            </div>
+        </div>
+        <div class="bottom-controls">
+            <div class="x-zoom-container" id="simpleZoomContainer">
+                <span class="x-slider-label">↔️ X축 간격 조절:</span>
+                <input type="range" id="xZoomSlider" class="zoom-slider-horizontal" min="30" max="200" value="60" oninput="updateXScale(this.value)">
+            </div>
+            <div class="range-slider-container" id="rangeSliderContainer">
+                <div id="rangeSlider"></div>
+                <div class="range-info" id="rangeInfo">기간을 선택하세요</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. 전역 변수 및 설정
+        // ==========================================
+        Chart.register(ChartDataLabels);
+        
+        let metadata = {}; 
+        let currentCompData = null; // 현재 선택된 기업의 데이터 (Fetch로 가져옴)
+        
+        let currentCompName = '';
+        let currentTab = 'PL_MIX';
+        let myChart = null;
+        let currentDataLength = 0;
+        let currentLabels = [];
+        let originalMaxY = 0, originalMinY = 0, originalMaxY1 = 0, originalMinY1 = 0; 
+
+        // 차트 구성 설정
+        const CONFIG_MAP = {
+            '일반': {
+                'PL_MIX': { type: 'financial', sources: ['PL', 'Profitability'], left_items: [{key: '매출액', color: '#36A2EB', type: 'bar'}, {key: '영업이익', color: '#FF6384', type: 'bar'}], right_items: [{key: '매출총이익률', color: '#FFCE56', type: 'line'}, {key: '영업이익률', color: '#4BC0C0', 'type': 'line'}] },
+                'BS_MIX': { type: 'financial', sources: ['BS', 'Stability'], left_items: [{key: '자산총계', color: '#36A2EB', type: 'bar'}, {key: '부채총계', color: '#FF6384', type: 'bar'}, {key: '자본총계', color: '#9966FF', type: 'bar'}], right_items: [{key: '부채비율', color: '#FF9F40', type: 'line'}] }
+            },
+            '금융': {
+                'PL_MIX': { type: 'financial', sources: ['PL', 'Profitability'], left_items: [{key: '영업수익', color: '#36A2EB', type: 'bar'}, {key: '영업이익', color: '#FF6384', type: 'bar'}], right_items: [{key: '순이익률', color: '#FFCE56', type: 'line'}, {key: '영업이익률', color: '#4BC0C0', 'type': 'line'}] },
+                'BS_MIX': { type: 'financial', sources: ['BS', 'Stability'], left_items: [{key: '자산총계', color: '#36A2EB', type: 'bar'}, {key: '부채총계', color: '#FF6384', type: 'bar'}, {key: '자본총계', color: '#9966FF', type: 'bar'}], right_items: [{key: '부채비율', color: '#FF9F40', type: 'line'}] }
+            }
+        };
+        const COMMON_CONFIG = {
+            'CF': { type: 'financial', sources: ['CF'], left_items: [{key: '재무활동CF', color: '#36A2EB', type: 'line'}, {key: '투자활동CF', color: '#FF6384', type: 'line'}, {key: '영업활동CF', color: '#4BC0C0', type: 'line'}], right_items: [] },
+            'STOCK': { type: 'stock', left_items: [{key: 'marcap', label: '시가총액', color: 'transparent', type: 'line', fill: false}], right_items: [] }
+        };
+        Object.keys(CONFIG_MAP).forEach(k => Object.assign(CONFIG_MAP[k], COMMON_CONFIG));
+
+        const ORDER_PRIORITY = ['영업수익', '매출액', '영업이익', '순이익률', '매출총이익률', '영업이익률', '자산총계', '부채총계', '자본총계', '부채비율', '영업활동CF', '투자활동CF', '재무활동CF', '시가총액', '주가'];
+
+        // ==========================================
+        // 2. 초기화 및 Fetch 로직
+        // ==========================================
+        window.onload = async function() {
+            try {
+                const response = await fetch('metadata.json');
+                metadata = await response.json();
+                
+                const compList = document.getElementById('compList');
+                Object.keys(metadata).sort().forEach(name => {
+                    let op = document.createElement('option');
+                    op.value = name;
+                    compList.appendChild(op);
+                });
+                
+                // 첫 번째 기업 자동 로딩
+                const firstComp = Object.keys(metadata).sort()[0];
+                if(firstComp) {
+                    document.getElementById('companyInput').value = firstComp;
+                    loadCompanyData(firstComp);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("초기 데이터 로딩 실패! (metadata.json 파일이 있는지 확인하세요)");
+            }
+        };
+
+        // 기업 선택 시 데이터 가져오기
+        async function loadCompanyData(name) {
+            if (!metadata[name]) return;
+            
+            document.getElementById('loadingOverlay').style.display = 'block';
+            currentCompName = name;
+            const code = metadata[name].code;
+            
+            try {
+                // Fetch 요청: data 폴더 안의 JSON 파일을 가져옴
+                const res = await fetch(`data/${code}.json`);
+                if(!res.ok) throw new Error(`파일을 찾을 수 없습니다: data/${code}.json`);
+                
+                currentCompData = await res.json();
+                
+                updateMetaInfo();
+                initPeriodSelect();
+                updateChart(false);
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                alert("데이터 로딩 오류: " + e.message + "\n\n[확인사항]\n1. 'data' 폴더가 HTML 파일과 같은 위치에 있나요?\n2. 파이썬 서버가 해당 폴더에서 실행 중인가요?");
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        document.getElementById('companyInput').addEventListener('change', (e) => {
+            loadCompanyData(e.target.value);
+        });
+
+        // ==========================================
+        // 3. 차트 및 UI 업데이트 로직 (복원됨)
+        // ==========================================
+        function updateMetaInfo() {
+            if(!currentCompData) return;
+            const d = currentCompData;
+            const b = document.getElementById('industryBadge');
+            b.style.display = 'inline-block';
+            b.textContent = d.type === '금융'?'금융':'일반';
+            b.className = 'badge ' + (d.type==='금융'?'fin':'gen');
+            
+            const sep = document.getElementById('sep'), con = document.getElementById('con');
+            const hasSep = d.data['별도'] && Object.keys(d.data['별도']).length > 0;
+            const hasCon = d.data['연결'] && Object.keys(d.data['연결']).length > 0;
+            
+            if(!hasCon) { con.disabled=true; sep.checked=true; } else con.disabled=false;
+            if(!hasSep) { sep.disabled=true; con.checked=true; } else sep.disabled=false;
+        }
+
+        function toggleCompareMode() { 
+            const chk = document.getElementById('compareToggle');
+            const inp = document.getElementById('compareInput'); 
+            if (chk.checked) { inp.classList.add('active'); inp.focus(); } 
+            else { inp.classList.remove('active'); inp.value = ''; updateChart(false); } 
+        }
+
+        function setTab(tab, btn) {
+            currentTab = tab; 
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+            btn.classList.add('active');
+            
+            const compType = (currentCompData && currentCompData.type) || '일반';
+            const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
+            const isStock = currentConfig[currentTab].type === 'stock';
+            
+            document.getElementById('consolControl').style.display = isStock ? 'none' : 'flex';
+            document.getElementById('periodSelect').style.visibility = isStock ? 'hidden' : 'visible';
+            document.getElementById('stockOptions').style.display = isStock ? 'flex' : 'none';
+            document.getElementById('simpleZoomContainer').style.display = isStock ? 'none' : 'flex';
+            document.getElementById('rangeSliderContainer').style.display = isStock ? 'block' : 'none';
+            document.getElementById('rightSliderBox').style.display = isStock ? 'flex' : 'none';
+            
+            const box = document.getElementById('chartScrollBox');
+            if (isStock) box.classList.add('no-scroll'); else box.classList.remove('no-scroll');
+            updateChart(false);
+        }
+
+        function initPeriodSelect() { 
+            const sel = document.getElementById('periodSelect'); sel.innerHTML = ''; 
+            const opts = [{'v': 'ALL_Q', 't': '전체 분기 추이'}, {'v': 'ALL_Y', 't': '연도별 합계'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'CUM_1Q', 't': '1분기 누적'}, {'v': 'CUM_2Q', 't': '상반기 누적'}, {'v': 'CUM_3Q', 't': '3분기 누적'}, {'v': 'CUM_4Q', 't': '연간 누적'}, {'v': 'divider', 't': '──────────', 'd': true}, {'v': 'COMP_1Q', 't': '1Q 비교'}, {'v': 'COMP_2Q', 't': '2Q 비교'}, {'v': 'COMP_3Q', 't': '3Q 비교'}, {'v': 'COMP_4Q', 't': '4Q 비교'}]; 
+            opts.forEach(o => { let e = document.createElement('option'); e.value = o.v; e.text = o.t; if(o.d) e.disabled = true; sel.appendChild(e); }); 
+            
+            const type = document.querySelector('input[name="consol"]:checked').value; 
+            let years = new Set(); 
+            const compType = (currentCompData && currentCompData.type) || '일반';
+            const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
+            
+            currentConfig['PL_MIX'].sources.forEach(src => { 
+                if(currentCompData.data[type] && currentCompData.data[type][src]) 
+                    currentCompData.data[type][src].forEach(r => years.add(r.year)); 
+            }); 
+            let d2 = document.createElement('option'); d2.disabled = true; d2.text = "──────────"; sel.appendChild(d2); 
+            Array.from(years).sort().forEach(y => { let e = document.createElement('option'); e.value = y; e.text = y + "년 상세"; sel.appendChild(e); }); 
+        }
+
+        function calculateMA(data, period) { 
+            let ma = []; 
+            for (let i = 0; i < data.length; i++) { 
+                if (i < period - 1) { ma.push(null); continue; } 
+                let sum = 0; 
+                for (let j = 0; j < period; j++) sum += data[i - j].close; 
+                ma.push(sum / period); 
+            } 
+            return ma; 
+        }
+
+        function getPerformanceData(compData, consolType, stockDates) {
+            if (!compData || !compData.data[consolType]) return { rev: [], prof: [] };
+            let plData = compData.data[consolType]['PL'] || [];
+            const qEndMap = {1: '03-31', 2: '06-30', 3: '09-30', 4: '12-31'};
+            let rMap = {}, pMap = {};
+            
+            plData.forEach(item => { 
+                if(item.year && item.quarter) { 
+                    const dStr = `${item.year}-${qEndMap[item.quarter]}`; 
+                    rMap[dStr] = item['매출액'] || item['영업수익'] || 0; 
+                    pMap[dStr] = item['영업이익'] || 0; 
+                } 
+            });
+            let rev = Array(stockDates.length).fill(null), prof = Array(stockDates.length).fill(null);
+            Object.keys(rMap).forEach(td => {
+                let idx = stockDates.indexOf(td);
+                if (idx === -1) for (let i = stockDates.length - 1; i >= 0; i--) if (stockDates[i] < td) { idx = i; break; }
+                if (idx !== -1) { rev[idx] = rMap[td] === 0 ? null : rMap[td]; prof[idx] = pMap[td] === 0 ? null : pMap[td]; }
+            });
+            return { rev, prof };
+        }
+
+        function typeLabel(q) { if(q===1) return '1Q누적'; if(q===2) return '상반기'; if(q===3) return '3Q누적'; return '연간'; }
+
+        // ==========================================
+        // 4. 차트 업데이트 (Core Logic)
+        // ==========================================
+        async function updateChart(keepZoom = false) {
+            try {
+                if (!currentCompData) return;
+                
+                // [★ 중요 수정] ctx 선언 위치 수정
+                const canvas = document.getElementById('mainChart');
+                if(!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                const consolType = document.querySelector('input[name="consol"]:checked').value;
+                const compType = currentCompData.type || '일반';
+                const currentConfig = CONFIG_MAP[compType] || CONFIG_MAP['일반'];
+                const tabCfg = currentConfig[currentTab];
+
+                let savedStartIdx = 0, savedEndIdx = 0;
+                let savedRightMax = 110; 
+                
+                if (keepZoom) {
+                    const sliderEl = document.getElementById('rangeSlider');
+                    if (sliderEl && sliderEl.noUiSlider) {
+                        const vals = sliderEl.noUiSlider.get(); 
+                        savedStartIdx = parseInt(vals[0]); savedEndIdx = parseInt(vals[1]);
+                    }
+                    savedRightMax = document.getElementById('rightMaxSlider').value;
+                }
+
+                const isComp = document.getElementById('compareToggle').checked;
+                const compBName = document.getElementById('compareInput').value;
+                
+                let compBData = null;
+                if (isComp && compBName && metadata[compBName]) {
+                    try {
+                        const res = await fetch(`data/${metadata[compBName].code}.json`);
+                        if(res.ok) compBData = await res.json();
+                    } catch(e) { console.log("비교 데이터 로딩 실패"); }
+                }
+                const hasComp = !!compBData;
+
+                const period = document.getElementById('periodSelect').value;
+                let unitDiv = parseFloat(document.getElementById('unitSelect').value);
+                const isStock = tabCfg.type === 'stock';
+                const showOverlay = document.getElementById('resultOverlay').checked && isStock;
+
+                let finalLabels = [], finalDataA = [], finalDataB = [];
+
+                if (isStock) {
+                    const getS = (d) => d && d.stock_data ? d.stock_data : [];
+                    let sA = getS(currentCompData), sB = hasComp ? getS(compBData) : [];
+                    let allD = new Set(sA.map(d=>d.date)); if(hasComp) sB.forEach(d=>allD.add(d.date));
+                    finalLabels = Array.from(allD).sort();
+                    const mapS = (src) => finalLabels.map(date => src.find(k=>k.date===date) || {});
+                    finalDataA = mapS(sA); finalDataB = hasComp ? mapS(sB) : [];
+                } else {
+                    const proc = (dObj) => {
+                        let m={}; if(!dObj||!dObj.data[consolType])return[];
+                        tabCfg.sources.forEach(s=>{if(dObj.data[consolType][s])dObj.data[consolType][s].forEach(r=>m[r.label]={...(m[r.label]||{}),...r});});
+                        let f=Object.values(m).sort((a,b)=>(a.year-b.year)||(a.quarter-b.quarter));
+                        if(period==='ALL_Y'||period.startsWith('CUM_')) { const ys=[...new Set(f.map(d=>d.year))], tQ=period.startsWith('CUM_')?parseInt(period.split('_')[1].replace('Q','')):4; return ys.map(y=>{ const its=f.filter(d=>d.year===y&&d.quarter<=tQ); if(!its.length)return null; let r={label:y+'년'+(period.startsWith('CUM_')?` ${typeLabel(tQ)}`:'')}; [...tabCfg.left_items,...tabCfg.right_items].forEach(i=>{ const k=i.key, isR=tabCfg.right_items.includes(i); if(isR||['자산총계','부채총계','자본총계'].includes(k)) r[k]=its[its.length-1][k]; else r[k]=its.reduce((a,c)=>a+(c[k]||0),0); }); return r; }).filter(d=>d!==null); } else if(period.startsWith('COMP_')) return f.filter(d=>d.quarter===parseInt(period.split('_')[1].replace('Q',''))); else if(period!=='ALL_Q') return f.filter(d=>d.year==period); return f;
+                    };
+                    let dA = proc(currentCompData), dB = hasComp ? proc(compBData) : [];
+                    let allL = new Set(dA.map(d=>d.label)); if(hasComp) dB.forEach(d=>allL.add(d.label));
+                    finalLabels = Array.from(allL).sort();
+                    const mapD = (s,l) => l.map(lb=>s.find(d=>d.label===lb)||{});
+                    finalDataA = mapD(dA, finalLabels); finalDataB = hasComp ? mapD(dB, finalLabels) : [];
+                }
+
+                currentDataLength = finalLabels.length;
+                const fs = window.innerWidth<=768?10:12;
+
+                if (!isStock) {
+                    const sliderVal = document.getElementById('xZoomSlider').value;
+                    updateXScale(sliderVal);
+                } else {
+                    document.querySelector('.chart-wrapper').style.width = '100%';
+                    currentLabels = finalLabels;
+                    if (keepZoom) initRangeSlider(currentLabels, savedStartIdx, savedEndIdx); else initRangeSlider(currentLabels);
+                }
+
+                // 축 범위 계산
+                let maxY=0, minY=0, maxY1=-Infinity, minY1=Infinity; 
+                if(!isStock) {
+                    maxY1 = 0; minY1 = 0; 
+                    const calc = (d) => {
+                        if(!d)return;
+                        tabCfg.left_items.forEach(i=>{let v=(d[i.key]||0)/unitDiv; if(v>maxY)maxY=v; if(v<minY)minY=v;});
+                        tabCfg.right_items.forEach(i=>{let v=(d[i.key]||0); if(v>maxY1)maxY1=v; if(v<minY1)minY1=v;});
+                    };
+                    finalDataA.forEach(calc); if(hasComp) finalDataB.forEach(calc);
+                } else {
+                    finalDataA.forEach(d => { if(d.high>0) { maxY1=Math.max(maxY1,d.high); minY1=Math.min(minY1,d.low); } });
+                    if(hasComp) finalDataB.forEach(d => { if(d.high>0) { maxY1=Math.max(maxY1,d.high); minY1=Math.min(minY1,d.low); } });
+                    if(maxY1 === -Infinity) maxY1 = 100;
+                    if(minY1 === Infinity) minY1 = 0;
+                    if(showOverlay) {
+                        const pData = getPerformanceData(currentCompData, consolType, finalLabels);
+                        [...pData.rev, ...pData.prof].forEach(v => { if(v!==null){ let val=v/unitDiv; if(val>maxY)maxY=val; if(val<minY)minY=val; } });
+                    }
+                }
+
+                originalMaxY=maxY*1.1; originalMinY=minY*1.1; 
+                originalMaxY1=maxY1*1.1; originalMinY1=minY1*0.9; 
+
+                if (!keepZoom) { ['leftMaxSlider','leftMinSlider','rightMaxSlider','rightMinSlider'].forEach(id=>document.getElementById(id).value=110); }
+
+                let datasets = [];
+                const createDs = (isB, item, isLine, orderBase, customData=null) => {
+                    const target = customData ? customData : (isB ? finalDataB : finalDataA);
+                    const name = isB ? compBName : currentCompName;
+                    const labelName = item.label || item.key;
+                    const label = hasComp ? `${name} - ${labelName}` : labelName;
+                    let color = item.color, dash = item.borderDash||[], pStyle = item.type==='bar'?'rect':'circle';
+                    
+                    if(item.key === 'marcap' && !isB) { color = 'transparent'; pStyle = 'circle'; } 
+                    else if(isB){
+                        if(['매출액','자산총계','재무활동CF','marcap','영업수익'].includes(item.key)) color='#7f8c8d';
+                        else if(['영업이익','자본총계','투자활동CF','close'].includes(item.key)) color='#bdc3c7';
+                        else color='#95a5a6';
+                        if(item.type==='line') dash=[5, 5]; pStyle=item.type==='bar'?'rect':'triangle';
+                    }
+                    const pRad = isStock ? (customData ? 4 : 0) : (window.innerWidth <= 768 ? 2 : 3);
+                    let yID = isLine && !customData ? 'y1' : 'y';
+                    if (item.key === 'marcap') yID = 'y_marcap';
+
+                    return {
+                        label: label,
+                        data: target.map(d => {
+                            let val = customData ? d : (d[item.key]||0);
+                            if (customData && val === null) return null;
+                            return isLine && !customData && item.key !== 'marcap' ? val : Math.round(val/unitDiv);
+                        }),
+                        backgroundColor: isB?'transparent':(item.fill?color+'33':color),
+                        borderColor: color, type: item.type, yAxisID: yID,
+                        fill: item.fill&&!isB, order: orderBase+(isB?1:0),
+                        pointStyle: pStyle, borderDash: dash, tension: 0.4, borderWidth: 2,
+                        pointRadius: pRad, pointHoverRadius: 5, spanGaps: true, hidden: false, 
+                        datalabels: { display: (ctx)=>!isStock&&!isB&&ctx.dataset.data.length<50, anchor:'end', align:'top', color:isLine?item.color:undefined, font:{size:fs}, formatter:isLine&&!isStock?(v)=>v.toFixed(1)+'%':(v)=>v.toLocaleString() }
+                    };
+                };
+
+                if (isStock) {
+                    const candles = finalDataA.map(d => ({ x: d.date, o: d.open, h: d.high, l: d.low, c: d.close }));
+                    datasets.push({ label: currentCompName, data: candles, type: 'candlestick', yAxisID: 'y1', order: 1, color: { up: '#e74c3c', down: '#3498db', unchanged: '#999' }, datalabels: { display: false } });
+                    const maColors = {5: '#2ecc71', 10: '#9b59b6', 20: '#f1c40f', 60: '#e67e22', 120: '#95a5a6'};
+                    document.querySelectorAll('.ma-chk:checked').forEach(chk => {
+                        const p = parseInt(chk.value);
+                        datasets.push({ label: `MA${p}`, data: calculateMA(finalDataA, p), type: 'line', yAxisID: 'y1', borderColor: maColors[p]||'#333', borderWidth: 1, pointRadius: 0, order: 0, datalabels: { display: false } });
+                    });
+                    tabCfg.left_items.forEach(i=>{ datasets.push(createDs(false, i, false, 10)); });
+                    if(hasComp) datasets.push({ label: compBName+' (종가)', data: finalDataB.map(d=>d.close), type: 'line', yAxisID: 'y1', borderColor: '#7f8c8d', borderWidth: 2, pointRadius: 0, borderDash: [5,5], order: 2, datalabels: { display: false } });
+                    if (showOverlay) {
+                        const pData = getPerformanceData(currentCompData, consolType, finalLabels);
+                        datasets.push(createDs(false, {key:'overlay_rev', label:'매출/수익(실적)', color:'#36A2EB', type:'line', borderDash:[2, 2]}, false, 5, pData.rev));
+                        datasets.push(createDs(false, {key:'overlay_prof', label:'영업이익(실적)', color:'#FF6384', type:'line', borderDash:[2, 2]}, false, 5, pData.prof));
+                    }
+                } else {
+                    tabCfg.left_items.forEach(i=>{ datasets.push(createDs(false, i, false, 10)); if(hasComp) datasets.push(createDs(true, i, false, 11)); });
+                    tabCfg.right_items.forEach(i=>{ datasets.push(createDs(false, i, true, 0)); if(hasComp) datasets.push(createDs(true, i, true, 1)); });
+                }
+
+                if (myChart) myChart.destroy();
+                const hasRight = tabCfg.right_items.length > 0 || isStock;
+                document.getElementById('rightSliderBox').style.display = hasRight ? 'flex' : 'none';
+
+                const rMaxFactor = keepZoom ? document.getElementById('rightMaxSlider').value / 100 : 1.1;
+                
+                let y1Options = {};
+                if (isStock) {
+                    y1Options = { type: 'linear', display: hasRight, position: 'right', min: originalMinY1 * 0.9, max: originalMaxY1 * rMaxFactor, ticks: { font: {size: fs} }, grid: { drawOnChartArea: false } };
+                } else {
+                    y1Options = { type: 'linear', display: hasRight, position: 'right', suggestedMin: originalMinY1, suggestedMax: originalMaxY1, ticks: { font: {size: fs} }, grid: { drawOnChartArea: false } };
+                }
+
+                // [중요] ctx 변수 사용
+                myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: finalLabels, datasets: datasets },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 12, padding: 15, font: {size: fs+1}, sort: (a,b) => { const gk=(s)=>s.includes(' - ')?s.split(' - ')[1]:s; const ai=ORDER_PRIORITY.indexOf(gk(a.text)), bi=ORDER_PRIORITY.indexOf(gk(b.text)); if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi; } } },
+                            tooltip: { bodyFont: {size: fs+2}, titleFont: {size: fs+2}, callbacks: { label: (c) => { let v=c.raw, l=c.dataset.label; if(c.dataset.type==='candlestick') return `${l}: 시${v.o} 고${v.h} 저${v.l} 종${v.c}`; if(c.dataset.yAxisID==='y1'&&!isStock) return l+': '+v.toFixed(1)+'%'; else return l+': '+v.toLocaleString(); } } }
+                        },
+                        scales: {
+                            x: { type: isStock?'time':'category', time: { unit: 'month', tooltipFormat: 'yyyy-MM-dd', displayFormats: { month: 'yy.MM' } }, ticks: { font: {size: fs}, maxRotation: 0, source: 'auto' }, offset: !isStock, min: keepZoom&&isStock?finalLabels[savedStartIdx]:undefined, max: keepZoom&&isStock?finalLabels[savedEndIdx]:undefined },
+                            y: { display: !isStock || showOverlay, position: 'left', suggestedMax: originalMaxY, suggestedMin: originalMinY, ticks: { font: {size: fs} }, grid: { drawOnChartArea: true } },
+                            y1: y1Options,
+                            y_marcap: { type: 'linear', display: false } 
+                        }
+                    }
+                });
+                
+                if (isStock && !keepZoom) initRangeSlider(finalLabels);
+                else if(!isStock) updateXScale(document.getElementById('xZoomSlider').value);
+
+            } catch (err) { console.error(err); alert("차트 그리기 오류: " + err.message); }
+        }
+
+        // ==========================================
+        // 5. 슬라이더 및 기타 유틸리티
+        // ==========================================
+        function updateLeftMax(val) { if (myChart) { myChart.options.scales.y.max = (originalMaxY>0?originalMaxY:1000)*(val/100); myChart.update(); }}
+        function updateLeftMin(val) { if (myChart) { let b = originalMinY<0?originalMinY:-(originalMaxY*0.1); if(b===0)b=-1000; myChart.options.scales.y.min = b*(val/100); myChart.update(); }}
+        function updateRightMax(val) { if (myChart && myChart.options.scales.y1) { myChart.options.scales.y1.max = (originalMaxY1>0?originalMaxY1:10)*(val/100); myChart.update(); }}
+        function updateRightMin(val) { if (myChart && myChart.options.scales.y1) { let b = originalMinY1<0?originalMinY1:-(originalMaxY1*0.1); if(b===0)b=-10; myChart.options.scales.y1.min = b*(val/100); myChart.update(); }}
+        
+        function updateXScale(val) { 
+            const wrap = document.querySelector('.chart-wrapper'); const box = document.querySelector('.chart-scroll-box');
+            if (CONFIG_MAP[currentCompData.type || '일반'][currentTab].type === 'stock') return;
+            wrap.style.width = Math.max(box.clientWidth, (currentDataLength||10)*val) + 'px'; 
+        }
+
+        function initRangeSlider(labels) {
+            const sliderEl = document.getElementById('rangeSlider'); if (!sliderEl) return;
+            if (sliderEl.noUiSlider) sliderEl.noUiSlider.destroy();
+            if (!labels || labels.length === 0) return;
+            noUiSlider.create(sliderEl, { start: [0, labels.length-1], connect: true, range: {'min': 0, 'max': labels.length-1}, step: 1, behaviour: 'drag-tap' });
+            sliderEl.noUiSlider.on('update', function (values) {
+                const sVal = parseInt(values[0]), eVal = parseInt(values[1]);
+                document.getElementById('rangeInfo').innerText = `${labels[sVal]} ~ ${labels[eVal]}`;
+                if (myChart && CONFIG_MAP[currentCompData.type || '일반'][currentTab].type === 'stock') { 
+                    myChart.options.scales.x.min = labels[sVal]; myChart.options.scales.x.max = labels[eVal]; myChart.update('none'); 
+                }
+            });
+        }
+        function downloadExcel() { if (!currentCompData) return; const type = document.querySelector('input[name="consol"]:checked').value; const wb = XLSX.utils.book_new(); ['PL', 'BS', 'CF', 'Profitability', 'Stability'].forEach(s => { if (currentCompData.data[type][s]) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(currentCompData.data[type][s]), s); }); if (currentCompData.stock_data) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(currentCompData.stock_data), 'Stock_Price'); XLSX.writeFile(wb, `${currentCompName}_통합데이터.xlsx`); }
+        
+        window.addEventListener('resize', () => { if(myChart) updateChart(true); });
+    </script>
+</body>
+</html>
