@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financial Dashboard v6.5</title>
+    <title>Financial Dashboard v6.8</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -50,7 +50,6 @@
         th:first-child, td:first-child { position: sticky; left: 0; background: inherit; z-index: 20; text-align: left; border-right: 2px solid #eee; font-weight: bold; min-width: 120px; }
         tr:hover { background-color: #f8f9fa; }
         .row-pct { color: #666; font-size: 12px; font-style: italic; background-color: #fafafa; }
-        /* 영업외손익 등 계산된 행 강조 */
         .row-calc td:first-child { color: #007bff; }
 
         .y-slider-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 30px; background: #fff9e6; border-radius: 8px; border: 1px solid #ffeeba; }
@@ -62,7 +61,11 @@
         .overlay-box, .ma-box { display: flex; align-items: center; gap: 5px; background: #fff4e6; padding: 4px 8px; border-radius: 6px; border: 1px solid #ffe8cc; font-size: 12px; }
         .ma-box { background: #e8f6f3; border-color: #d1f2eb; }
         .ma-checks { display: flex; gap: 5px; margin-left: 5px; }
-        .compare-input { width: 100px; display: none; } .compare-input.active { display: inline-block; }
+        
+        /* 비교 컨트롤 스타일 */
+        .compare-box { display: flex; align-items: center; gap: 5px; background: #eef2f5; padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd; }
+        .compare-input { width: 100px; display: none; } 
+        .compare-input.active { display: inline-block; }
         
         #loadingOverlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 100; text-align: center; padding-top: 200px; font-weight: bold; color: var(--point); backdrop-filter: blur(2px); border-radius: 12px; }
     </style>
@@ -70,7 +73,7 @@
 <body>
     <div class="card">
         <div id="loadingOverlay">데이터 불러오는 중...</div>
-        <div class="maker-sign">Made by KMW | v6.5 Calc Feature</div>
+        <div class="maker-sign">Made by KMW | v6.8 Compare Fix</div>
         <div class="header">
             <div><h2>📈 기업 분석 <span id="industryBadge" class="badge gen">일반</span></h2></div>
             <div class="view-switch">
@@ -83,7 +86,7 @@
             <input type="text" id="companyInput" list="compList" placeholder="기업명 검색..." style="flex:1; min-width:120px;">
             <datalist id="compList"></datalist>
             
-            <div class="compare-box" style="display:flex; align-items:center; gap:5px; background:#eef2f5; padding:5px 10px; border-radius:6px; border:1px solid #ddd;">
+            <div id="compareControlBox" class="compare-box">
                 <input type="checkbox" id="compareToggle" onchange="toggleCompareMode()"> <label for="compareToggle" style="font-size:13px;">비교</label>
                 <input type="text" id="compareInput" list="compList" class="compare-input" placeholder="비교 기업" onchange="updateChart()">
             </div>
@@ -178,22 +181,13 @@
         };
         Object.keys(CONFIG_MAP).forEach(k => Object.assign(CONFIG_MAP[k], COMMON_CONFIG));
 
-        // [수정] 테이블 순서: 영업외손익, 법인세, 계속/중단사업 행 추가
         const TABLE_ROWS = {
             'PL_MIX': [
-                {k:'매출액', l:'매출액(수익)'}, 
-                {k:'매출총이익', l:'매출총이익'}, 
-                {k:'매출총이익률', l:'GP%', p:true},
-                {k:'판매비와관리비', l:'판매비와관리비'}, 
-                {k:'영업이익', l:'영업이익'}, 
-                {k:'영업이익률', l:'OP%', p:true},
-                
-                {k:'영업외손익', l:'영업외손익(Calc)', c:true}, // Calculated
+                {k:'매출액', l:'매출액(수익)'}, {k:'매출총이익', l:'매출총이익'}, {k:'매출총이익률', l:'GP%', p:true},
+                {k:'판매비와관리비', l:'판매비와관리비'}, {k:'영업이익', l:'영업이익'}, {k:'영업이익률', l:'OP%', p:true},
+                {k:'영업외손익', l:'영업외손익(Calc)', c:true},
                 {k:'법인세', l:'법인세비용'},
-                
-                {k:'당기순이익', l:'당기순이익'}, 
-                {k:'순이익률', l:'NI%', p:true},
-                
+                {k:'당기순이익', l:'당기순이익'}, {k:'순이익률', l:'NI%', p:true},
                 {k:'계속사업 당기순이익', l:'계속사업이익'},
                 {k:'중단사업 당기순이익', l:'중단사업이익'}
             ],
@@ -230,6 +224,7 @@
             finally { document.getElementById('loadingOverlay').style.display='none'; }
         }
 
+        // [수정] 뷰 모드 전환시 비교 컨트롤 숨김/표시
         function setViewMode(mode) {
             currentViewMode = mode;
             document.getElementById('btnGraph').className = mode==='graph' ? 'view-btn active' : 'view-btn';
@@ -237,7 +232,23 @@
             document.getElementById('graphView').style.display = mode==='graph' ? 'flex' : 'none';
             document.getElementById('tableView').className = mode==='table' ? 'table-container active' : 'table-container';
             document.querySelector('.bottom-controls').style.display = mode==='graph' ? 'block' : 'none';
+            
+            // 비교 기능은 그래프에서만!
+            const compBox = document.getElementById('compareControlBox');
+            if (mode === 'table') {
+                compBox.style.display = 'none';
+            } else {
+                compBox.style.display = 'flex'; // 다시 보이게
+            }
+
             if(mode==='table') updateChart();
+        }
+
+        function toggleCompareMode() { 
+            const chk = document.getElementById('compareToggle');
+            const inp = document.getElementById('compareInput'); 
+            if (chk.checked) { inp.classList.add('active'); inp.focus(); } 
+            else { inp.classList.remove('active'); inp.value = ''; updateChart(false); } 
         }
 
         function setTab(tab, btn) {
@@ -300,14 +311,16 @@
 
             const isComp = document.getElementById('compareToggle').checked;
             const compBName = document.getElementById('compareInput').value;
+            
+            // [수정] 비교 데이터 로딩 로직 강화
             let compBData = null;
             if (isComp && compBName && metadata[compBName]) {
                 try {
                     const res = await fetch(`data/${metadata[compBName].code}.json`);
                     if(res.ok) compBData = await res.json();
-                } catch(e) {}
+                } catch(e) { console.log("비교 데이터 로딩 실패"); }
             }
-            const hasComp = !!compBData;
+            const hasComp = !!compBData; // 비교 데이터가 확실히 있을 때만 true
 
             let finalLabels=[], finalDataA=[], finalDataB=[];
 
@@ -326,6 +339,31 @@
                     });
                     let f = Object.values(m).sort((a,b) => (a.year-b.year)||(a.quarter-b.quarter));
                     
+                    const enrichRecord = (r, its) => {
+                        const sum = (k) => its ? its.reduce((a,c)=>a+(c[k]||0),0) : (r[k]||0);
+                        const val = (k) => its ? its[its.length-1][k] : (r[k]||0);
+
+                        const sales = sum('매출액') || sum('영업수익');
+                        const gp = sum('매출총이익');
+                        const op = sum('영업이익');
+                        const ni = sum('당기순이익') || sum('순이익');
+                        const tax = sum('법인세') || sum('법인세비용'); 
+                        
+                        r['영업외손익'] = ni + tax - op;
+                        r['법인세'] = tax;
+                        r['계속사업 당기순이익'] = sum('계속사업 당기순이익') || sum('계속영업당기순이익');
+                        r['중단사업 당기순이익'] = sum('중단사업 당기순이익') || sum('중단영업당기순이익');
+
+                        if(sales) {
+                            r['매출총이익률'] = (gp/sales)*100;
+                            r['영업이익률'] = (op/sales)*100;
+                            r['순이익률'] = (ni/sales)*100;
+                        }
+                        const equity = val('자본총계');
+                        if(equity) r['부채비율'] = (val('부채총계')/equity)*100;
+                        return r;
+                    };
+
                     if(period==='ALL_Y' || period.startsWith('CUM_')) {
                         const ys = [...new Set(f.map(d=>d.year))];
                         const tQ = period.startsWith('CUM_') ? parseInt(period.split('_')[1].replace('Q','')) : 4;
@@ -333,63 +371,35 @@
                             const its = f.filter(d => d.year===y && d.quarter<=tQ);
                             if(!its.length) return null;
                             let r = {label: `${y}년 ${typeLabel(tQ)}`, year:y};
-                            const sum = (k) => its.reduce((a,c) => a+(c[k]||0), 0);
-                            
-                            // [수정] 필수 항목 추출 (역산용)
-                            const sales = sum('매출액') || sum('영업수익');
-                            const gp = sum('매출총이익');
-                            const op = sum('영업이익');
-                            const ni = sum('당기순이익') || sum('순이익');
-                            const tax = sum('법인세') || sum('법인세비용'); // 법인세
-                            
-                            // [핵심] 영업외손익 역산 (Net + Tax - Op) *사용자식 Net - Tax - Op 적용시 부호 반전됨
-                            // 회계 항등식: Op + NonOp - Tax = Net  --> NonOp = Net + Tax - Op
-                            const non_op = ni + tax - op;
-
-                            // 계속/중단 사업
-                            const cont_ni = sum('계속사업 당기순이익') || sum('계속영업당기순이익');
-                            const disc_ni = sum('중단사업 당기순이익') || sum('중단영업당기순이익');
-
-                            // 값 할당
-                            r['영업외손익'] = non_op;
-                            r['법인세'] = tax;
-                            r['계속사업 당기순이익'] = cont_ni;
-                            r['중단사업 당기순이익'] = disc_ni;
-
-                            // 나머지 항목들 채우기
                             [...tabCfg.left_items, ...tabCfg.right_items, ...TABLE_ROWS['PL_MIX'], ...TABLE_ROWS['BS_MIX'], ...TABLE_ROWS['CF']].forEach(item => {
                                 let k = item.key || item.k;
-                                if(!k || r[k] !== undefined) return; // 이미 계산된 건 패스
-                                if(['자산총계','부채총계','자본총계','기말현금','부채비율'].includes(k)) {
-                                    r[k] = its[its.length-1][k];
-                                } else {
-                                    r[k] = sum(k);
-                                }
+                                if(!k) return;
+                                if(['자산총계','부채총계','자본총계','기말현금','부채비율'].includes(k)) r[k] = its[its.length-1][k];
+                                else r[k] = its.reduce((a,c)=>a+(c[k]||0),0);
                             });
-
-                            if(sales) {
-                                r['매출총이익률'] = (gp/sales)*100;
-                                r['영업이익률'] = (op/sales)*100;
-                                r['순이익률'] = (ni/sales)*100;
-                            }
-                            if(r['자본총계']) r['부채비율'] = (r['부채총계']/r['자본총계'])*100;
-                            return r;
+                            return enrichRecord(r, null);
                         }).filter(d=>d);
                     } else if(period.startsWith('COMP_')) {
-                        // 비교(COMP) 모드일 때도 역산 로직 적용 필요시 여기에 추가
-                        // 현재는 단순 필터링
-                        return f.filter(d => d.quarter === parseInt(period.split('_')[1].replace('Q','')));
+                        return f.filter(d => d.quarter === parseInt(period.split('_')[1].replace('Q',''))).map(r => enrichRecord(r, null));
                     } else if(period !== 'ALL_Q') {
-                        return f.filter(d => d.year == period);
+                        return f.filter(d => d.year == period).map(r => enrichRecord(r, null));
                     }
-                    return f;
+                    return f.map(r => enrichRecord(r, null));
                 };
+                
                 finalDataA = proc(currentCompData);
+                // [수정] B기업도 proc 로직을 태우되, hasComp가 true일 때만
                 finalDataB = hasComp ? proc(compBData) : [];
-                let allL = new Set(finalDataA.map(d=>d.label)); if(hasComp) finalDataB.forEach(d=>allL.add(d.label));
+                
+                // 라벨 통합 및 데이터 정렬 (중요)
+                let allL = new Set(finalDataA.map(d=>d.label)); 
+                if(hasComp) finalDataB.forEach(d=>allL.add(d.label));
                 finalLabels = Array.from(allL).sort();
+                
+                // 데이터 매핑 (라벨 기준 정렬)
                 const mapD = (s,l) => l.map(lb=>s.find(d=>d.label===lb)||{});
-                finalDataA = mapD(finalDataA, finalLabels); finalDataB = hasComp ? mapD(finalDataB, finalLabels) : [];
+                finalDataA = mapD(finalDataA, finalLabels); 
+                finalDataB = hasComp ? mapD(finalDataB, finalLabels) : [];
             }
 
             if (currentViewMode === 'table' && !isStock) {
@@ -415,7 +425,8 @@
                         tabCfg.left_items.forEach(i=>{ let v=(d[i.key]||0)/unit; if(v>maxY)maxY=v; if(v<minY)minY=v; });
                         tabCfg.right_items.forEach(i=>{ let v=(d[i.key]||0); if(v>maxY1)maxY1=v; if(v<minY1)minY1=v; });
                     };
-                    finalDataA.forEach(check); if(hasComp) finalDataB.forEach(check);
+                    finalDataA.forEach(check); 
+                    if(hasComp) finalDataB.forEach(check); // 비교 데이터도 축 범위 계산에 포함
                 } else {
                     finalDataA.forEach(d => { if(d.high>0) { maxY1=Math.max(maxY1,d.high); minY1=Math.min(minY1,d.low); } });
                     if(hasComp) finalDataB.forEach(d => { if(d.high>0) { maxY1=Math.max(maxY1,d.high); minY1=Math.min(minY1,d.low); } });
@@ -476,8 +487,15 @@
                         datasets.push(createDs(false, {key:'overlay_prof', label:'이익(실적)', color:'#FF6384', type:'line', borderDash:[2,2]}, false, 5, pData.prof));
                     }
                 } else {
-                    tabCfg.left_items.forEach(i=>{ datasets.push(createDs(false, i, false, 10)); if(hasComp) datasets.push(createDs(true, i, false, 11)); });
-                    tabCfg.right_items.forEach(i=>{ datasets.push(createDs(false, i, true, 0)); if(hasComp) datasets.push(createDs(true, i, true, 1)); });
+                    // [수정] 기업 비교시 데이터셋 추가 로직 (Graph Mode Only)
+                    tabCfg.left_items.forEach(i=>{ 
+                        datasets.push(createDs(false, i, false, 10)); 
+                        if(hasComp) datasets.push(createDs(true, i, false, 11)); 
+                    });
+                    tabCfg.right_items.forEach(i=>{ 
+                        datasets.push(createDs(false, i, true, 0)); 
+                        if(hasComp) datasets.push(createDs(true, i, true, 1)); 
+                    });
                 }
 
                 if(myChart) myChart.destroy();
@@ -527,7 +545,7 @@
             rows.forEach(rowDef => {
                 let tr = document.createElement('tr');
                 if(rowDef.p) tr.className = 'row-pct';
-                if(rowDef.c) tr.className = 'row-calc'; // 강조용
+                if(rowDef.c) tr.className = 'row-calc'; 
                 
                 let tdName = document.createElement('td');
                 tdName.innerText = rowDef.l;
@@ -535,7 +553,7 @@
 
                 data.forEach(d => {
                     let td = document.createElement('td');
-                    let val = d[rowDef.k] || d[rowDef.k.replace('률','율')];
+                    let val = d[rowDef.k] !== undefined ? d[rowDef.k] : d[rowDef.k.replace('률','율')];
                     
                     if (val === undefined || val === null) {
                         td.innerText = '-';
